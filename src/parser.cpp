@@ -23,6 +23,7 @@
 #include "clime/utils.hpp"
 #include "clime/parseUtils.hpp"
 
+#include <solace/posixErrorDomain.hpp>
 #include <solace/output_utils.hpp>
 
 #include <cstring>
@@ -44,7 +45,8 @@ const char Parser::DefaultValueSeparator = '=';
 
 
 
-const AtomValue kParserErrorCatergory = atom("cli-parse");
+const AtomValue kParserErrorCatergory = atom("cli");
+
 
 enum class ParserError : int {
     InvalidInput = 1,

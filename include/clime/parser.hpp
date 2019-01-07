@@ -35,6 +35,7 @@
 // Note unordered map has issues with class not being fully defined.
 #include <map>      // TODO(abbyssoul): Replace with fix-memory map
 #include <vector>   // TODO(abbyssoul): Replace with fix-memory vector
+#include <functional>   // TODO(abbyssoul): Replace with a better delegate, maybe?
 
 
 namespace clime {

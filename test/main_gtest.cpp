@@ -14,7 +14,7 @@
 *  limitations under the License.
 */
 /*******************************************************************************
- * libsolace Unit Test Suit
+ * Unit Test Suit
  * @file: GTest entry point
  *******************************************************************************/
 #include <gtest/gtest.h>

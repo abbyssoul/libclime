@@ -21,6 +21,8 @@
 #include <clime/parser.hpp>  // Class being tested
 #include <clime/parseUtils.hpp>
 
+#include <solace/posixErrorDomain.hpp>
+
 #include <gtest/gtest.h>
 
 

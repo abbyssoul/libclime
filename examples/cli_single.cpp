@@ -34,7 +34,6 @@ static const Version                kAppVersion = Version(0, 0, 1, "dev");
 
 
 int main(int argc, const char **argv) {
-
     int intValue = 0;
     auto floatValue = 0.0f;
     auto userName = StringView{getenv("USER")};
@@ -50,7 +49,7 @@ int main(int argc, const char **argv) {
             .parse(argc, argv);
 
     if (!res) {
-        std::cerr << res.getError().toString();
+        std::cerr << res.getError();
         return EXIT_FAILURE;
     }
 

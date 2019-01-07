@@ -21,6 +21,9 @@
 
 #include "clime/parseUtils.hpp"
 
+
+#include <solace/posixErrorDomain.hpp>
+
 #include <cstring>
 #include <cstdlib>
 #include <sstream>      // std::stringstream, std::stringbuf
