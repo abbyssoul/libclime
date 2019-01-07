@@ -384,7 +384,7 @@ fail(const char* msg, Args&&...args) {
 }
 
 template<typename... Args>
-Result<uint, Error>
+Result<uint32, Error>
 failUint(const char* msg, Args&&... args) {
     return Err(makeParserError(ParserError::InvalidInput, "Fail"));
 //    return Err(Error{fmt::format(msg, std::forward<Args>(args)...), 1});
@@ -413,14 +413,14 @@ parseOption(StringView arg, char prefix, char valueSeparator) {
 }
 
 
-Result<uint, Error>
+Result<uint32, Error>
 parseOptions(Parser::Context const& cntx,
              std::vector<Parser::Option> const& options,
              char prefix, char separator) {
     auto firstPositionalArgument = cntx.offset;
 
     // Parse array of strings until we error out or there is no more flags:
-    for (uint i = firstPositionalArgument; i < cntx.argc; ++i, ++firstPositionalArgument) {
+    for (decltype(firstPositionalArgument) i = firstPositionalArgument; i < cntx.argc; ++i, ++firstPositionalArgument) {
         if (!cntx.argv[i]) {
             return failUint("Invalid number of arguments!");
         }
@@ -449,7 +449,7 @@ parseOptions(Parser::Context const& cntx,
             }
         }
 
-        uint numberMatched = 0;
+        uint32 numberMatched = 0;
 
         auto const optCntx = Parser::Context {cntx.argc, cntx.argv, i, argName, cntx.parser};
 
@@ -490,7 +490,7 @@ parseOptions(Parser::Context const& cntx,
 }
 
 
-Result<uint, Error>
+Result<uint32, Error>
 parseArguments(Parser::Context const& cntx,
                std::vector<Parser::Argument> const& arguments) {
 
@@ -507,10 +507,10 @@ parseArguments(Parser::Context const& cntx,
     if (!expectsTrailingArgument && nbPositionalArguments > arguments.size())
         return failUint("Too many arguments");
 
-    uint positionalArgument = cntx.offset;
+    auto positionalArgument = cntx.offset;
 
     // Parse array of strings until we error out or there is no more values to consume:
-    for (uint i = 0;
+    for (decltype(positionalArgument) i = 0;
          i < arguments.size() && positionalArgument < cntx.argc;
          ++positionalArgument) {
 
@@ -556,7 +556,7 @@ parseCommand(Parser::Command const& cmd, Parser::Context const& cntx) {
         return Err(optionsParsingResult.moveError());
     }
 
-    const uint positionalArgument = optionsParsingResult.unwrap();
+    auto const positionalArgument = optionsParsingResult.unwrap();
 
     // Positional arguments processing
     if (positionalArgument < cntx.argc) {
@@ -614,7 +614,7 @@ Parser::parse(int argc, char const *argv[]) const {
     }
 
     return parseCommand(_defaultAction, {
-                            static_cast<uint>(argc),
+                            static_cast<uint32>(argc),
                             argv, 1,
                             argv[0],
                             *this});

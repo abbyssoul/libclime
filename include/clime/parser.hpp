@@ -92,13 +92,13 @@ public:
     struct Context {
 
         /// Initial number of arguments passed to the 'parse' method.
-        const uint argc;
+        const Solace::uint32 argc;
 
         /// Individual command line arguments the parse method has been given.
         const char** argv;
 
         /// Current parser offset into argv.
-        const uint offset;
+        const Solace::uint32 offset;
 
         /// Name of the option / argument being parsed.
         const Solace::StringView name;
@@ -106,7 +106,7 @@ public:
         /// Reference to the instance of the parser that invokes the callback.
         Parser const& parser;
 
-        Context(uint inArgc, char const* inArgv[], uint inOffset,
+        Context(Solace::uint32 inArgc, char const* inArgv[], Solace::uint32 inOffset,
                 Solace::StringView inName,
                 Parser const& self) :
             argc(inArgc),
