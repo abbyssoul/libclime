@@ -133,18 +133,18 @@ public:
      */
     class Option {
     public:
-        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral description, Solace::StringView* value);
-        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral description, Solace::int8* value);
-        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral description, Solace::uint8* value);
-        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral description, Solace::int16* value);
-        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral description, Solace::uint16* value);
-        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral description, Solace::int32* value);
-        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral description, Solace::uint32* value);
-        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral description, Solace::int64* value);
-        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral description, Solace::uint64* value);
-        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral description, Solace::float32* value);
-        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral description, Solace::float64* value);
-        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral description, bool* value);
+        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::StringView* val);
+        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::int8* value);
+        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::uint8* value);
+        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::int16* value);
+        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::uint16* value);
+        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::int32* value);
+        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::uint32* value);
+        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::int64* value);
+        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::uint64* value);
+        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::float32* value);
+        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::float64* value);
+        Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, bool* value);
 
         /// Common constructor:
         template<typename F>
@@ -471,7 +471,8 @@ public:
      * @param appVersion Application version to be printed.
      * @return A parser command that when given by a user will result in a printing of the version info.
      */
-    static Command::CommandDict::value_type printVersionCmd(Solace::StringView appName, Solace::Version const& appVersion);
+    static Command::CommandDict::value_type
+    printVersionCmd(Solace::StringView appName, Solace::Version const& appVersion);
 
 
     /**

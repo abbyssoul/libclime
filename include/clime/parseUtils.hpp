@@ -59,36 +59,44 @@ Solace::Result<bool, Solace::Error> tryParse<bool>(Solace::StringView value) { r
 
 template<>
 inline
-Solace::Result<Solace::int8, Solace::Error> tryParse<Solace::int8>(Solace::StringView value) { return tryParseInt8(value); }
+Solace::Result<Solace::int8, Solace::Error>
+tryParse<Solace::int8>(Solace::StringView value) { return tryParseInt8(value); }
 
 template<>
 inline
-Solace::Result<Solace::int16, Solace::Error> tryParse<Solace::int16>(Solace::StringView value) { return tryParseInt16(value); }
+Solace::Result<Solace::int16, Solace::Error>
+tryParse<Solace::int16>(Solace::StringView value) { return tryParseInt16(value); }
 
 template<>
 inline
-Solace::Result<Solace::int32, Solace::Error> tryParse<Solace::int32>(Solace::StringView value) { return tryParseInt32(value); }
+Solace::Result<Solace::int32, Solace::Error>
+tryParse<Solace::int32>(Solace::StringView value) { return tryParseInt32(value); }
 
 template<>
 inline
-Solace::Result<Solace::int64, Solace::Error> tryParse<Solace::int64>(Solace::StringView value) { return tryParseInt64(value); }
+Solace::Result<Solace::int64, Solace::Error>
+tryParse<Solace::int64>(Solace::StringView value) { return tryParseInt64(value); }
 
 
 template<>
 inline
-Solace::Result<Solace::uint8, Solace::Error> tryParse<Solace::uint8>(Solace::StringView value) { return tryParseUInt8(value); }
+Solace::Result<Solace::uint8, Solace::Error>
+tryParse<Solace::uint8>(Solace::StringView value) { return tryParseUInt8(value); }
 
 template<>
 inline
-Solace::Result<Solace::uint16, Solace::Error> tryParse<Solace::uint16>(Solace::StringView value) { return tryParseUInt16(value); }
+Solace::Result<Solace::uint16, Solace::Error>
+tryParse<Solace::uint16>(Solace::StringView value) { return tryParseUInt16(value); }
 
 template<>
 inline
-Solace::Result<Solace::uint32, Solace::Error> tryParse<Solace::uint32>(Solace::StringView value) { return tryParseUInt32(value); }
+Solace::Result<Solace::uint32, Solace::Error>
+tryParse<Solace::uint32>(Solace::StringView value) { return tryParseUInt32(value); }
 
 template<>
 inline
-Solace::Result<Solace::uint64, Solace::Error> tryParse<Solace::uint64>(Solace::StringView value) { return tryParseUInt64(value); }
+Solace::Result<Solace::uint64, Solace::Error>
+tryParse<Solace::uint64>(Solace::StringView value) { return tryParseUInt64(value); }
 
 
 }  // End of namespace clime
