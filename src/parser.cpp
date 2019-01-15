@@ -21,19 +21,12 @@
 
 #include "clime/parser.hpp"
 #include "clime/utils.hpp"
-#include "clime/parseUtils.hpp"
 
 #include <solace/posixErrorDomain.hpp>
 #include <solace/output_utils.hpp>
 
 #include <cstring>
 #include <cstdlib>
-
-#include <iomanip>
-#include <iostream>
-#include <sstream>  // std::stringstream
-
-#include <utility>
 
 
 using namespace Solace;
@@ -44,293 +37,16 @@ const char Parser::DefaultPrefix = '-';
 const char Parser::DefaultValueSeparator = '=';
 
 
-
 const AtomValue kParserErrorCatergory = atom("cli");
 
 
-enum class ParserError : int {
-    InvalidInput = 1,
-    OptionParsing,
-};
-
-
-Error makeParserError(ParserError errorCode, StringLiteral tag) {
+Error clime::makeParserError(ParserError errorCode, StringLiteral tag) noexcept {
     return Error{kParserErrorCatergory, static_cast<int>(errorCode), tag};
 }
 
 
-template <typename... Args>
-Optional<Error>
-formatOptionalError(const char* fmt, Args&&... values) {
-    return makeParserError(ParserError::OptionParsing, "option parsing");
-//    return Optional<Error>{in_place, fmt::format(fmt, std::forward<Args>(values)...)};
-}
-
-
-
-template<typename T>
-Optional<Error>
-parseIntArgument(T* dest, StringView const& value, const Parser::Context&) {
-    auto val = tryParse<T>(value);
-
-    if (val) {
-        *dest = static_cast<T>(val.unwrap());
-        return none;
-    } else {
-        // TODO(abbyssoul): Result::getError() must return Optional<Error>
-        return Optional<Error>(val.moveError());
-    }
-}
-
-
-
-Optional<Error>
-parseBoolean(bool* dest, StringView value) {
-    auto val = tryParse<bool>(value);
-
-    if (val) {
-        *dest = val.unwrap();
-        return none;
-    } else {
-        // TODO(abbyssoul): Result::getError() must return Optional<Error>
-        return Optional<Error>(val.moveError());
-    }
-}
-
-
-Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, StringView* dest) :
-    Option(names, desc, OptionArgument::Required,
-           [dest](Optional<StringView> const& value, Context const&) -> Optional<Error> {
-        *dest = value.get();
-
-        return none;
-    })
-{
-}
-
-
-Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, int8* dest):
-    Option(names, desc, OptionArgument::Required,
-           [dest](Optional<StringView> const& value, Context const& context) {
-                return parseIntArgument(dest, value.get(), context);
-            })
-{
-}
-
-Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, uint8* dest):
-    Option(names, desc, OptionArgument::Required,
-           [dest](Optional<StringView> const& value, Context const& context) {
-               return parseIntArgument(dest, value.get(), context);
-           })
-{
-}
-
-
-Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, int16* dest):
-    Option(names, desc, OptionArgument::Required,
-           [dest](Optional<StringView> const& value, Context const& context) {
-               return parseIntArgument(dest, value.get(), context);
-           })
-{
-}
-
-Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, uint16* dest):
-    Option(names, desc, OptionArgument::Required,
-           [dest](Optional<StringView> const& value, Context const& context) {
-               return parseIntArgument(dest, value.get(), context);
-           })
-{
-}
-
-
-Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, int32* dest):
-    Option(names, desc, OptionArgument::Required,
-           [dest](Optional<StringView> const& value, Context const& context) {
-               return parseIntArgument(dest, value.get(), context);
-           })
-{
-}
-
-Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, uint32* dest):
-    Option(names, desc, OptionArgument::Required,
-           [dest](Optional<StringView> const& value, Context const& context) {
-               return parseIntArgument(dest, value.get(), context);
-           })
-{
-}
-
-
-Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, int64* dest):
-    Option(names, desc, OptionArgument::Required,
-           [dest](Optional<StringView> const& value, Context const& context) {
-               return parseIntArgument(dest, value.get(), context);
-           })
-{
-}
-
-Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, uint64* dest):
-    Option(names, desc, OptionArgument::Required,
-           [dest](Optional<StringView> const& value, Context const& context) {
-               return parseIntArgument(dest, value.get(), context);
-           })
-{
-}
-
-Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, float32* dest) :
-    Option(names, desc, OptionArgument::Required,
-           [dest](Optional<StringView> const& value, Context const& context) -> Optional<Error> {
-        char* pEnd = nullptr;
-        // FIXME(abbyssoul): not safe use of data
-        auto val = strtof(value.get().data(), &pEnd);
-
-        if (!pEnd || pEnd == value.get().data()) {  // No conversion has been done
-            return formatOptionalError("Option '{}' is not float32 value: '{}'", context.name, value.get());
-        }
-
-        *dest = static_cast<float32>(val);
-
-        return none;
-    })
-{
-}
-
-Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, float64* dest) :
-    Option(names, desc, OptionArgument::Required,
-           [dest](Optional<StringView> const& value, Context const& context) -> Optional<Error> {
-        char* pEnd = nullptr;
-        // FIXME(abbyssoul): not safe use of data
-        auto val = strtod(value.get().data(), &pEnd);
-
-        if (!pEnd || pEnd == value.get().data()) {  // No conversion has been done
-            return formatOptionalError("Option '{}' is not float64 value: '{}'", context.name, value.get());
-        }
-
-        *dest = static_cast<float64>(val);
-
-        return none;
-    })
-{
-}
-
-
-Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, bool* dest) :
-     Option(names, desc, OptionArgument::Optional,
-            [dest](Optional<StringView> const& value, Context const&) -> Optional<Error> {
-         if (value.isSome()) {
-             return parseBoolean(dest, value.get());
-         } else {
-             *dest = true;
-
-             return none;
-         }
-    })
-{
-}
-
-
-
-Parser::Argument::Argument(StringLiteral name, StringLiteral description, int8* dest):
-    Argument(name, description,
-             [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
-{
-}
-
-Parser::Argument::Argument(StringLiteral name, StringLiteral description, uint8* dest):
-    Argument(name, description,
-             [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
-{
-}
-
-Parser::Argument::Argument(StringLiteral name, StringLiteral description, int16* dest):
-    Argument(name, description,
-             [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
-
-{
-}
-
-Parser::Argument::Argument(StringLiteral name, StringLiteral description, uint16* dest):
-    Argument(name, description,
-             [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
-
-{
-}
-
-Parser::Argument::Argument(StringLiteral name, StringLiteral description, int32* dest):
-    Argument(name, description,
-             [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
-
-{
-}
-
-Parser::Argument::Argument(StringLiteral name, StringLiteral description, uint32* dest):
-    Argument(name, description,
-             [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
-
-{
-}
-
-Parser::Argument::Argument(StringLiteral name, StringLiteral description, int64* dest):
-    Argument(name, description,
-             [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
-
-{
-}
-
-Parser::Argument::Argument(StringLiteral name, StringLiteral description, uint64* dest):
-    Argument(name, description,
-             [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
-
-{
-}
-
-Parser::Argument::Argument(StringLiteral name, StringLiteral description, float32* dest):
-    Argument(name, description,
-             [dest](StringView value, Context const& context) {
-        char* pEnd = nullptr;
-        // FIXME(abbyssoul): not safe use of data
-        *dest = strtof(value.data(), &pEnd);
-
-        return (!pEnd || pEnd == value.data())
-                ? formatOptionalError("Argument '{}' is not float32 value: '{}'", context.name, value)
-                : none;
-    })
-{
-}
-
-
-Parser::Argument::Argument(StringLiteral name, StringLiteral description, float64* dest):
-    Argument(name, description,
-             [dest](StringView value, Context const& context) {
-        char* pEnd = nullptr;
-        // FIXME(abbyssoul): not safe use of data
-        *dest = strtod(value.data(), &pEnd);
-
-        return (!pEnd || pEnd == value.data())
-                ? formatOptionalError("Argument '{}' is not float64 value: '{}'", context.name, value)
-                : none;
-    })
-{
-}
-
-
-Parser::Argument::Argument(StringLiteral name, StringLiteral description, bool* dest) :
-    Argument(name, description, [dest](StringView value, Context const&) { return parseBoolean(dest, value); })
-{
-}
-
-
-Parser::Argument::Argument(StringLiteral name, StringLiteral description, StringView* dest) :
-    Argument(name, description, [dest](StringView value, Context const&) { *dest = value; return none; })
-{
-}
-
-bool Parser::Argument::isTrailing() const noexcept {
-    return name().equals("*");
-}
-
-
 Result<void, Error>
-idleAction() {
+idleAction() noexcept {
     return Ok();
 }
 
@@ -351,65 +67,21 @@ Parser::Parser(StringView appDescription, std::initializer_list<Option> options)
 }
 
 
-bool Parser::Option::isMatch(StringView name) const noexcept {
-    for (const auto& optName : _names) {
-        if (optName == name) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-
-Optional<Error>
-Parser::Option::match(Optional<StringView> const& value, Context const& cntx) const {
-    return _callback(value, cntx);
-}
-
-
-
-Optional<Error>
-Parser::Argument::match(StringView const& value, Context const& cntx) const {
-    return _callback(value, cntx);
-}
-
-
-// FIXME: Currently error message is not used. Add proper error codes!
-template<typename... Args>
-Result<std::function<Result<void, Error> ()>, Error>
-fail(const char* msg, Args&&...args) {
-    return Err(makeParserError(ParserError::InvalidInput, "Fail"));
-//    return Err(Error{fmt::format(msg, std::forward<Args>(args)...), 1});
-}
-
-template<typename... Args>
-Result<uint32, Error>
-failUint(const char* msg, Args&&... args) {
-    return Err(makeParserError(ParserError::InvalidInput, "Fail"));
-//    return Err(Error{fmt::format(msg, std::forward<Args>(args)...), 1});
-}
-
-
 std::pair<StringView, Optional<StringView>>
 parseOption(StringView arg, char prefix, char valueSeparator) {
-
-    const StringView::size_type startIndex = (arg.substring(1).startsWith(prefix)) ? 2 : 1;
+    StringView::size_type const startIndex = (arg.substring(1).startsWith(prefix)) ? 2 : 1;
     if (startIndex >= arg.length()) {
         return std::make_pair(StringView(), none);
     }
 
-    StringView::size_type endIndex = startIndex;
-
+    auto endIndex = startIndex;
     while ((endIndex < arg.length()) && arg[endIndex] != valueSeparator) {
         ++endIndex;
     }
 
-    if (endIndex < arg.length())
-        return std::make_pair(arg.substring(startIndex, endIndex),
-                        Optional<StringView>(arg.substring(endIndex + 1)));
-    else
-        return std::make_pair(arg.substring(startIndex), none);
+    return (endIndex < arg.length())
+               ? std::make_pair(arg.substring(startIndex, endIndex), Optional<StringView>{arg.substring(endIndex + 1)})
+               : std::make_pair(arg.substring(startIndex), none);
 }
 
 
@@ -420,9 +92,9 @@ parseOptions(Parser::Context const& cntx,
     auto firstPositionalArgument = cntx.offset;
 
     // Parse array of strings until we error out or there is no more flags:
-    for (decltype(firstPositionalArgument) i = firstPositionalArgument; i < cntx.argc; ++i, ++firstPositionalArgument) {
+    for (decltype(firstPositionalArgument) i = firstPositionalArgument; i < cntx.argv.size(); ++i, ++firstPositionalArgument) {
         if (!cntx.argv[i]) {
-            return failUint("Invalid number of arguments!");
+            return Parser::fail("Invalid number of arguments!");
         }
 
         auto const arg = StringView{cntx.argv[i]};
@@ -439,7 +111,7 @@ parseOptions(Parser::Context const& cntx,
         auto consumeValue = false;
 
         if (argValue.isNone()) {  // No argument given in --opt=value format, need to examine next argv value
-            if (i + 1 < cntx.argc) {  // Check that there are more arguments in the argv, thus we can expect a value
+            if (i + 1 < cntx.argv.size()) {  // Check that there are more arguments in the argv, thus we can expect a value
                 StringView nextArg{cntx.argv[i + 1]};
 
                 if (!nextArg.startsWith(prefix)) {
@@ -451,18 +123,18 @@ parseOptions(Parser::Context const& cntx,
 
         uint32 numberMatched = 0;
 
-        auto const optCntx = Parser::Context {cntx.argc, cntx.argv, i, argName, cntx.parser};
+        auto const optCntx = cntx.withOffsetAndName(i, argName);
 
         for (auto& option : options) {
             if (option.isMatch(argName)) {
                 if (argValue.isNone() &&
-                    option.getArgumentExpectations() == Parser::OptionArgument::Required) {
+                    option.getArgumentExpectations() == Parser::Optionality::Required) {
                     // Argument is required but none was given, error out!
-                    return failUint("Option '{}' expects a value, none were given", optCntx.name);
+                    return Parser::fail("No value given"); //"Option '{}' expects a value, none were given", optCntx.name);
                 }
 
                 if (consumeValue &&
-                    option.getArgumentExpectations() != Parser::OptionArgument::NotRequired) {
+                    option.getArgumentExpectations() != Parser::Optionality::NotRequired) {
                     consumeValue = false;
                     // Adjust current index in the array
                     ++i;
@@ -471,7 +143,7 @@ parseOptions(Parser::Context const& cntx,
 
                 numberMatched += 1;
 
-                auto r = option.match((option.getArgumentExpectations() == Parser::OptionArgument::NotRequired)
+                auto r = option.match((option.getArgumentExpectations() == Parser::Optionality::NotRequired)
                                                     ? none
                                                     : argValue,
                                       optCntx);
@@ -482,7 +154,7 @@ parseOptions(Parser::Context const& cntx,
         }
 
         if (numberMatched < 1) {
-            return failUint("Unexpected option '{}'", argName);
+            return Parser::fail("Unexpected option"); // '{}'", argName);
         }
     }
 
@@ -498,35 +170,32 @@ parseArguments(Parser::Context const& cntx,
             ? false
             : arguments.back().isTrailing();
 
-    auto const nbPositionalArguments = cntx.argc - cntx.offset;
+    auto const nbPositionalArguments = cntx.argv.size() - cntx.offset;
 
     if (nbPositionalArguments < arguments.size() && !expectsTrailingArgument) {
-        return failUint("Not enough arguments");
+        return Parser::fail("Not enough arguments");
     }
 
-    if (!expectsTrailingArgument && nbPositionalArguments > arguments.size())
-        return failUint("Too many arguments");
+    if (!expectsTrailingArgument && nbPositionalArguments > arguments.size()) {
+        return Parser::fail("Too many arguments");
+    }
 
     auto positionalArgument = cntx.offset;
 
     // Parse array of strings until we error out or there is no more values to consume:
     for (decltype(positionalArgument) i = 0;
-         i < arguments.size() && positionalArgument < cntx.argc;
+         i < arguments.size() && positionalArgument < cntx.argv.size();
          ++positionalArgument) {
 
         // Make sure that we didn't hit argv end:
         if (!cntx.argv[positionalArgument]) {
-            return failUint("Invalid number of arguments!");
+            return Parser::fail("Invalid number of arguments!");
         }
 
-        const StringView arg {cntx.argv[positionalArgument]};
         auto& targetArg = arguments[i];
-        const Parser::Context subCntx{cntx.argc,
-                    cntx.argv,
-                    positionalArgument,
-                    targetArg.name(),
-                    cntx.parser};
+        auto const subCntx = cntx.withOffsetAndName(positionalArgument, targetArg.name());
 
+        auto const arg = StringView {cntx.argv[positionalArgument]};
         auto maybeError = targetArg.match(arg, subCntx);
         if (maybeError) {
             return Err(maybeError.move());
@@ -539,9 +208,11 @@ parseArguments(Parser::Context const& cntx,
         }
     }
 
-    return (cntx.argc == positionalArgument)
-            ? Ok(positionalArgument)
-            : failUint("Not enough arguments");
+    if (cntx.argv.size() == positionalArgument) {
+        return Ok(positionalArgument);
+    }
+
+    return Parser::fail("Not enough arguments");
 }
 
 
@@ -559,137 +230,51 @@ parseCommand(Parser::Command const& cmd, Parser::Context const& cntx) {
     auto const positionalArgument = optionsParsingResult.unwrap();
 
     // Positional arguments processing
-    if (positionalArgument < cntx.argc) {
+    if (positionalArgument < cntx.argv.size()) {
 
         if (!cmd.commands().empty()) {
             auto const subcmdName = StringView {cntx.argv[positionalArgument]};
             auto const cmdIt = cmd.commands().find(subcmdName);
             if (cmdIt == cmd.commands().end()) {
-                return fail("Command '{}' not supported", subcmdName);
+                return Parser::fail("Command not supported"); //, subcmdName);
             }
 
-            const Parser::Context subcomandCntx{ cntx.argc,
-                        cntx.argv,
-                        positionalArgument + 1,
-                        subcmdName,
-                        cntx.parser};
-
-            return parseCommand(cmdIt->second, subcomandCntx);
+            return parseCommand(cmdIt->second, cntx.withOffsetAndName(positionalArgument + 1, subcmdName));
         } else if (!cmd.arguments().empty()) {
-            const Parser::Context subcomandCntx{cntx.argc,
-                        cntx.argv,
-                        positionalArgument,
-                        StringView(),
-                        cntx.parser};
-
-            auto parseResult = parseArguments(subcomandCntx, cmd.arguments());
-            if (!parseResult)
+            auto parseResult = parseArguments(cntx.withOffsetAndName(positionalArgument, {}), cmd.arguments());
+            if (!parseResult) {
                 return Err(parseResult.moveError());
+            }
 
             return Ok<Parser::ParseResult>(cmd.action());
         } else {
-            return fail("Unexpected arguments given");
+            return Parser::fail("Unexpected arguments given");
         }
 
     } else {
+        if ((cmd.arguments().empty() && cmd.commands().empty()) ||
+            (!cmd.arguments().empty() && cmd.arguments().back().isTrailing())) {
+            return  Ok<Parser::ParseResult>(cmd.action());
+        }
 
-        return (cmd.arguments().empty() && cmd.commands().empty())
-                || (!cmd.arguments().empty() && cmd.arguments().back().isTrailing())
-            ? Ok<Parser::ParseResult>(cmd.action())
-            : fail("Not enough arguments");
+        return Parser::fail("Not enough arguments");
     }
 }
 
 
 Result<Parser::ParseResult, Error>
-Parser::parse(int argc, char const *argv[]) const {
-    if (argc < 0) {
-        return fail("Number of arguments can not be negative");
-    }
+Parser::parse(Solace::ArrayView<const char*> args) const {
+    if (args.empty()) {
+        if (_defaultAction.arguments().empty() && _defaultAction.commands().empty()) {
+            return Ok<Parser::ParseResult>(_defaultAction.action());
+        }
 
-    if (argc < 1) {
-        return (_defaultAction.arguments().empty() && _defaultAction.commands().empty())
-                ? Ok<Parser::ParseResult>(_defaultAction.action())
-                : fail("Not enough arguments");
+        return fail("Not enough arguments");
     }
 
     return parseCommand(_defaultAction, {
-                            static_cast<uint32>(argc),
-                            argv, 1,
-                            argv[0],
+                            args,
+                            1,
+                            args[0],
                             *this});
-}
-
-
-Parser::Option
-Parser::printVersion(StringView appName, Version const& appVersion) {
-    return {
-        {"v", "version"},
-        "Print version",
-        Parser::OptionArgument::NotRequired,
-        [appName, &appVersion] (Optional<StringView> const&, Context const&) -> Optional<Error> {
-            VersionPrinter(appName, appVersion)
-                    (std::cout);
-
-            return none;
-        }
-    };
-}
-
-
-Parser::Option
-Parser::Parser::printHelp() {
-    return {
-        {"h", "help"},
-        "Print help",
-        Parser::OptionArgument::NotRequired,
-        [](Optional<StringView> const& value, Context const& cntx) -> Optional<Error> {
-            HelpFormatter printer(cntx.parser.optionPrefix());
-
-            if (value.isNone()) {
-                printer(std::cout,
-                        cntx.argv[0],
-                        cntx.parser.defaultAction());
-            } else {
-
-                const auto& cmdIt = cntx.parser.commands().find(value.get());
-                if (cmdIt != cntx.parser.commands().end()) {
-                    printer(std::cout,
-                            cmdIt->first,
-                            cmdIt->second);
-                } else {
-                    return Optional<Error>(makeError(BasicError::InvalidInput, "help"));
-                }
-            }
-
-            return none;
-        }
-    };
-}
-
-Parser::Command::CommandDict::value_type
-Parser::printVersionCmd(StringView appName, Version const& appVersion) {
-    return {"version", {
-            "Print version",
-            [appName, &appVersion]() -> Result<void, Error> {
-                 VersionPrinter(appName, appVersion)
-                         (std::cout);
-
-                 return Ok();
-            }
-        }};
-}
-
-
-Parser::Command::CommandDict::value_type
-Parser::printHelpCmd() {
-    return {"help", {
-            "Print help",
-            []() -> Result<void, Error> {
-                HelpFormatter printer(Parser::DefaultPrefix);
-//                printer(std::cout);
-
-                return Ok();
-            }
-     }};
 }

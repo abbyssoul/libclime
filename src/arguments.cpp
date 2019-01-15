@@ -1,0 +1,330 @@
+/*
+*  Copyright 2016 Ivan Ryabov
+*
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+*/
+/*******************************************************************************
+ * @file: clime/arguments.cpp
+ *
+ *  Created by soultaker on 18/08/16.
+*******************************************************************************/
+
+#include "clime/parser.hpp"
+#include "clime/parseUtils.hpp"
+
+
+using namespace Solace;
+using namespace clime;
+
+
+namespace /* anonymous */ {
+
+template <typename... Args>
+Optional<Error>
+formatOptionalError(const char* fmt, Args&&... values) noexcept {
+    return makeParserError(ParserError::OptionParsing, "option parsing");
+    //    return Optional<Error>{in_place, fmt::format(fmt, std::forward<Args>(values)...)};
+}
+
+
+template<typename T>
+Optional<Error>
+parseIntArgument(T* dest, StringView const& value, const Parser::Context&) {
+    auto val = tryParse<T>(value);
+
+    if (val) {
+        *dest = static_cast<T>(val.unwrap());
+        return none;
+    }
+
+    // TODO(abbyssoul): Result::getError() must return Optional<Error>
+    return Optional<Error>(val.moveError());
+}
+
+
+
+Optional<Error>
+parseBoolean(bool* dest, StringView value) {
+    auto val = tryParse<bool>(value);
+
+    if (val) {
+        *dest = val.unwrap();
+        return none;
+    }
+
+
+    // TODO(abbyssoul): Result::getError() must return Optional<Error>
+    return Optional<Error>(val.moveError());
+}
+
+
+}
+
+
+Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, StringView* dest)
+    : Option(names, desc, Optionality::Required,
+        [dest](Optional<StringView> const& value, Context const&) -> Optional<Error> {
+            *dest = value.get();
+
+            return none;
+        })
+{
+}
+
+
+Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, int8* dest)
+    : Option(names, desc, Optionality::Required,
+        [dest](Optional<StringView> const& value, Context const& context) {
+                 return parseIntArgument(dest, value.get(), context);
+        })
+{
+}
+
+Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, uint8* dest)
+    : Option(names, desc, Optionality::Required,
+             [dest](Optional<StringView> const& value, Context const& context) {
+                 return parseIntArgument(dest, value.get(), context);
+             })
+{
+}
+
+
+Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, int16* dest)
+    : Option(names, desc, Optionality::Required,
+             [dest](Optional<StringView> const& value, Context const& context) {
+                 return parseIntArgument(dest, value.get(), context);
+             })
+{
+}
+
+Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, uint16* dest)
+    : Option(names, desc, Optionality::Required,
+             [dest](Optional<StringView> const& value, Context const& context) {
+                 return parseIntArgument(dest, value.get(), context);
+             })
+{
+}
+
+
+Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, int32* dest)
+    : Option(names, desc, Optionality::Required,
+             [dest](Optional<StringView> const& value, Context const& context) {
+                 return parseIntArgument(dest, value.get(), context);
+             })
+{
+}
+
+
+Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, uint32* dest)
+    : Option(names, desc, Optionality::Required,
+             [dest](Optional<StringView> const& value, Context const& context) {
+                 return parseIntArgument(dest, value.get(), context);
+             })
+{
+}
+
+
+Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, int64* dest)
+    : Option(names, desc, Optionality::Required,
+             [dest](Optional<StringView> const& value, Context const& context) {
+                 return parseIntArgument(dest, value.get(), context);
+             })
+{
+}
+
+Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, uint64* dest)
+    : Option(names, desc, Optionality::Required,
+             [dest](Optional<StringView> const& value, Context const& context) {
+                 return parseIntArgument(dest, value.get(), context);
+             })
+{
+}
+
+Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, float32* dest)
+    : Option(names, desc, Optionality::Required,
+             [dest](Optional<StringView> const& value, Context const& context) -> Optional<Error> {
+                char* pEnd = nullptr;
+                // FIXME(abbyssoul): not safe use of data
+                auto val = strtof(value.get().data(), &pEnd);
+
+                if (!pEnd || pEnd == value.get().data()) {  // No conversion has been done
+                    return formatOptionalError("Option '{}' is not float32 value: '{}'", context.name, value.get());
+                }
+
+                *dest = static_cast<float32>(val);
+
+                return none;
+            })
+{
+}
+
+Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, float64* dest)
+    : Option(names, desc, Optionality::Required,
+             [dest](Optional<StringView> const& value, Context const& context) -> Optional<Error> {
+                char* pEnd = nullptr;
+                // FIXME(abbyssoul): not safe use of data
+                auto val = strtod(value.get().data(), &pEnd);
+
+                if (!pEnd || pEnd == value.get().data()) {  // No conversion has been done
+                    return formatOptionalError("Option '{}' is not float64 value: '{}'", context.name, value.get());
+                }
+
+                *dest = static_cast<float64>(val);
+
+                return none;
+             })
+{
+}
+
+
+Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, bool* dest)
+    : Option(names, desc, Optionality::Optional,
+             [dest](Optional<StringView> const& value, Context const&) -> Optional<Error> {
+                if (value.isSome()) {
+                    return parseBoolean(dest, value.get());
+                }
+
+                *dest = true;
+
+                return none;
+            })
+{
+}
+
+
+
+Parser::Argument::Argument(StringLiteral name, StringLiteral description, int8* dest)
+    : Argument(name, description,
+               [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
+{
+}
+
+Parser::Argument::Argument(StringLiteral name, StringLiteral description, uint8* dest)
+    : Argument(name, description,
+               [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
+{
+}
+
+Parser::Argument::Argument(StringLiteral name, StringLiteral description, int16* dest)
+    : Argument(name, description,
+               [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
+
+{
+}
+
+Parser::Argument::Argument(StringLiteral name, StringLiteral description, uint16* dest)
+    : Argument(name, description,
+               [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
+
+{
+}
+
+Parser::Argument::Argument(StringLiteral name, StringLiteral description, int32* dest)
+    : Argument(name, description,
+               [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
+
+{
+}
+
+Parser::Argument::Argument(StringLiteral name, StringLiteral description, uint32* dest)
+    : Argument(name, description,
+               [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
+
+{
+}
+
+Parser::Argument::Argument(StringLiteral name, StringLiteral description, int64* dest)
+    : Argument(name, description,
+               [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
+
+{
+}
+
+Parser::Argument::Argument(StringLiteral name, StringLiteral description, uint64* dest)
+    : Argument(name, description,
+               [dest](StringView value, Context const& context) { return parseIntArgument(dest, value, context); })
+
+{
+}
+
+Parser::Argument::Argument(StringLiteral name, StringLiteral description, float32* dest)
+    : Argument(name, description,
+                [dest](StringView value, Context const& context) {
+                    char* pEnd = nullptr;
+                    // FIXME(abbyssoul): not safe use of data
+                    *dest = strtof(value.data(), &pEnd);
+
+                    return (!pEnd || pEnd == value.data())
+                               ? formatOptionalError("Argument '{}' is not float32 value: '{}'", context.name, value)
+                               : none;
+               })
+{
+}
+
+
+Parser::Argument::Argument(StringLiteral name, StringLiteral description, float64* dest)
+    : Argument(name, description,
+                [dest](StringView value, Context const& context) {
+                    char* pEnd = nullptr;
+                    // FIXME(abbyssoul): not safe use of data
+                    *dest = strtod(value.data(), &pEnd);
+
+                    return (!pEnd || pEnd == value.data())
+                               ? formatOptionalError("Argument '{}' is not float64 value: '{}'", context.name, value)
+                               : none;
+               })
+{
+}
+
+
+Parser::Argument::Argument(StringLiteral name, StringLiteral description, bool* dest)
+    : Argument(name, description, [dest](StringView value, Context const&) { return parseBoolean(dest, value); })
+{
+}
+
+
+Parser::Argument::Argument(StringLiteral name, StringLiteral description, StringView* dest)
+    : Argument(name, description, [dest](StringView value, Context const&) { *dest = value; return none; })
+{
+}
+
+
+bool
+Parser::Argument::isTrailing() const noexcept {
+    return name().equals("*");
+}
+
+
+bool Parser::Option::isMatch(StringView name) const noexcept {
+    for (const auto& optName : _names) {
+        if (optName == name) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+Optional<Error>
+Parser::Option::match(Optional<StringView> const& value, Context const& cntx) const {
+    return _callback(value, cntx);
+}
+
+
+
+Optional<Error>
+Parser::Argument::match(StringView const& value, Context const& cntx) const {
+    return _callback(value, cntx);
+}
+

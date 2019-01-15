@@ -369,7 +369,7 @@ TEST_F(TestCommandlineParser, testCustomHandlerLong) {
     const char* appDesc = "Something awesome";
     Parser(appDesc, {
                     {{"x", "xxx"}, "Something", &xValue},
-                    {{"z", "zva"}, "Custom arg", Parser::OptionArgument::Required,
+                    {{"z", "zva"}, "Custom arg", Parser::Optionality::Required,
                     [&customCalled, &zValue](const Optional<StringView>& value, const Parser::Context&) {
                         customCalled = true;
                         zValue = value.get();
@@ -399,7 +399,7 @@ TEST_F(TestCommandlineParser, testCustomHandlerShort) {
     const char* appDesc = "Something awesome";
     Parser(appDesc, {
                     {{"x", "xxx"}, "Something", &xValue},
-                    {{"z", "zve"}, "Custom arg", Parser::OptionArgument::Required,
+                    {{"z", "zve"}, "Custom arg", Parser::Optionality::Required,
                     [&customCalled, &zValue](const Optional<StringView>& value, const Parser::Context&) {
                         customCalled = true;
                         zValue = value.get();
@@ -427,7 +427,7 @@ TEST_F(TestCommandlineParser, testCustomNoValue) {
     const char* appDesc = "Something awesome";
     auto const result = Parser(appDesc, {
                     {{"x", "xxx"}, "Something", &xValue},
-                    {{"z", "zve"}, "Custom arg", Parser::OptionArgument::Required,
+                    {{"z", "zve"}, "Custom arg", Parser::Optionality::Required,
                     [&customCalled, &zValue](const Optional<StringView>& value, const Parser::Context&) {
                         customCalled = true;
                         zValue = value.get();
@@ -452,7 +452,7 @@ TEST_F(TestCommandlineParser, testCustomNoValueExpected) {
     const char* appDesc = "Something awesome";
     Parser(appDesc, {
                             {{"x", "xxx"}, "Something", &xValue},
-                            {{"z", "zve"}, "Custom arg", Parser::OptionArgument::NotRequired,
+                            {{"z", "zve"}, "Custom arg", Parser::Optionality::NotRequired,
                             [&customCalled](const Optional<StringView>&, const Parser::Context&) {
                                 customCalled = true;
 
@@ -479,7 +479,7 @@ TEST_F(TestCommandlineParser, testCustomNoValueExpectedButGiven) {
     const char* argv[] = {"prog", "--xxx", "756", "--zve", "Val", nullptr};
     Parser("Something awesome", {
                             {{"x", "xxx"}, "Something", &xValue},
-                            {{"z", "zve"}, "Custom arg", Parser::OptionArgument::NotRequired,
+                            {{"z", "zve"}, "Custom arg", Parser::Optionality::NotRequired,
                             [&customCalled, &zVal](const Optional<StringView>& val, const Parser::Context&) {
                                 customCalled = true;
                                 zVal = val.isSome();
@@ -584,7 +584,7 @@ TEST_F(TestCommandlineParser, testRepeatingOptionsCustomHandler) {
     Parser("Something awesome")
             .options({
                         {{"i", "intValue"}, "Value",
-                        Parser::OptionArgument::Required,
+                        Parser::Optionality::Required,
                         [&vValue](const Optional<StringView>& value, const Parser::Context&) -> Optional<Error>{
                             auto res = tryParse<int>(value.get());
                             if (res) {

@@ -1,5 +1,6 @@
 
 set(SOURCE_FILES
+        arguments.cpp
         helpPrinter.cpp
         parseUtils.cpp
         parser.cpp

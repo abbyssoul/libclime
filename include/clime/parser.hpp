@@ -40,6 +40,15 @@
 
 namespace clime {
 
+enum class ParserError : int {
+    InvalidInput = 1,
+    OptionParsing,
+};
+
+
+Solace::Error makeParserError(ParserError errorCode, Solace::StringLiteral tag) noexcept;
+
+
 /**
  * Command line parser
  * This is a helper class to handle processing of command line arguments.
@@ -83,6 +92,11 @@ namespace clime {
 class Parser {
 public:
 
+    static Solace::types::Err<Solace::Error> fail(Solace::StringLiteral tag) noexcept {
+        return makeParserError(ParserError::InvalidInput, tag);
+    }
+
+public:
     /**
      * Parser context.
      * This object represents the current state of parsing.
@@ -91,14 +105,11 @@ public:
      */
     struct Context {
 
-        /// Initial number of arguments passed to the 'parse' method.
-        const Solace::uint32 argc;
-
         /// Individual command line arguments the parse method has been given.
-        const char** argv;
+        const Solace::ArrayView<const char*> argv;
 
         /// Current parser offset into argv.
-        const Solace::uint32 offset;
+        const Solace::ArrayView<const char*>::size_type offset;
 
         /// Name of the option / argument being parsed.
         const Solace::StringView name;
@@ -106,24 +117,32 @@ public:
         /// Reference to the instance of the parser that invokes the callback.
         Parser const& parser;
 
-        Context(Solace::uint32 inArgc, char const* inArgv[], Solace::uint32 inOffset,
+        Context(Solace::ArrayView<const char*> args, Solace::uint32 inOffset,
                 Solace::StringView inName,
-                Parser const& self) :
-            argc(inArgc),
-            argv(inArgv),
-            offset(inOffset),
-            name(inName),
-            parser(self)
+                Parser const& self)
+            : argv(std::move(args))
+              , offset(inOffset)
+              , name(inName)
+              , parser(self)
         {}
+
+        Context withOffsetAndName(const Solace::ArrayView<const char*>::size_type newOffset,
+                                  Solace::StringView newName) const noexcept {
+            return {argv,
+                newOffset,
+                newName,
+                parser
+            };
+        }
 
     };
 
     /**
      * Argument processing policy for custom callbacks
      */
-    enum class OptionArgument {
-        Required,          //!< Argument is required. It is an error if the option is given without an value.
+    enum class Optionality {
         Optional,          //!< Argument is optional. It is not an error to have option with or without an argument.
+        Required,          //!< Argument is required. It is an error if the option is given without an value.
         NotRequired        //!< Argument is not expected. It is an error to give an option with an argument value.
     };
 
@@ -150,7 +169,7 @@ public:
         template<typename F>
         Option(std::initializer_list<Solace::StringLiteral> names,
                Solace::StringLiteral description,
-               OptionArgument expectsArgument,
+               Optionality expectsArgument,
                F&& f) :
             _names(names),
             _description(std::move(description)),
@@ -190,7 +209,7 @@ public:
         const std::vector<Solace::StringLiteral>& names() const noexcept    { return _names; }
         const Solace::StringLiteral& description() const noexcept           { return _description; }
 
-        OptionArgument getArgumentExpectations() const noexcept     { return _expectsArgument; }
+        Optionality getArgumentExpectations() const noexcept     { return _expectsArgument; }
 
     private:
         //!< Long name of the option, Maybe empty if not specified.
@@ -200,7 +219,7 @@ public:
         Solace::StringLiteral                       _description;
 
         //!< Enum to indicate if this option expects a value or not.
-        OptionArgument                      _expectsArgument;
+        Optionality                      _expectsArgument;
 
         //!< A callback to be called when this option is encountered in the input cmd line.
         std::function<Solace::Optional<Solace::Error> (Solace::Optional<Solace::StringView> const&, Context const&)>
@@ -214,6 +233,8 @@ public:
      */
     class Argument {
     public:
+        ~Argument() = default;
+
         Argument(Solace::StringLiteral name, Solace::StringLiteral description, Solace::StringView* value);
         Argument(Solace::StringLiteral name, Solace::StringLiteral description, Solace::int8* value);
         Argument(Solace::StringLiteral name, Solace::StringLiteral description, Solace::uint8* value);
@@ -405,7 +426,8 @@ public:
     ~Parser() = default;
 
     /// Default copy-constructor
-    Parser(Parser const& rhs) = default;
+    Parser(Parser const& rhs) = delete;
+    Parser& operator= (Parser const& rhs) = delete;
 
     /// Default move-constructor
     Parser(Parser&& rhs) noexcept = default;
@@ -424,11 +446,6 @@ public:
      */
     Parser(Solace::StringView appDescription, std::initializer_list<Option> options);
 
-    Parser& operator= (Parser const& rhs) noexcept {
-        Parser(rhs).swap(*this);
-
-        return *this;
-    }
 
     Parser& operator= (Parser&& rhs) noexcept {
         return swap(rhs);
@@ -453,7 +470,22 @@ public:
      * @return Result of parsing: Either a pointer to the parser or an error.
      */
     Solace::Result<ParseResult, Solace::Error>
-    parse(int argc, const char* argv[]) const;
+    parse(int argc, const char* argv[]) const {
+        if (argc < 0) {
+            return fail("Number of arguments can not be negative");
+        }
+
+        return parse(Solace::arrayView(argv, argc));
+    }
+
+    /**
+     * Parse command line arguments and process all the flags.
+     * @param argc Number of command line arguments including name of the program at argv[0]
+     * @param argv An array of string that represent command line argument tokens.
+     * @return Result of parsing: Either a pointer to the parser or an error.
+     */
+    Solace::Result<ParseResult, Solace::Error>
+    parse(Solace::ArrayView<const char*> args) const;
 
 
     /**
@@ -570,6 +602,7 @@ public:
         return _defaultAction;
     }
 
+protected:
 private:
 
     /// Option prefix

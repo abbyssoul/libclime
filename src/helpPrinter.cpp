@@ -22,7 +22,8 @@
 #include "clime/utils.hpp"
 #include "clime/parseUtils.hpp"
 
-#include <solace/path.hpp>
+//#include <solace/path.hpp>
+#include <solace/posixErrorDomain.hpp>
 #include <solace/output_utils.hpp>
 
 #include <iomanip>
@@ -115,4 +116,69 @@ HelpFormatter::operator() (std::ostream& output,
 void
 VersionPrinter::operator() (std::ostream& output) {
     output << _canonicalAppName << " " << _version << std::endl;
+}
+
+
+
+Parser::Option
+Parser::printVersion(StringView appName, Version const& appVersion) {
+    return {{"v", "version"}, "Print version", Parser::Optionality::NotRequired,
+            [appName, &appVersion] (Optional<StringView> const&, Context const&) -> Optional<Error> {
+                VersionPrinter(appName, appVersion)
+                    (std::cout);
+
+                return none;
+            }};
+}
+
+
+Parser::Option
+Parser::Parser::printHelp() {
+    return {{"h", "help"}, "Print help", Parser::Optionality::NotRequired,
+            [](Optional<StringView> const& value, Context const& cntx) -> Optional<Error> {
+                HelpFormatter printer(cntx.parser.optionPrefix());
+
+                if (value.isNone()) {
+                    printer(std::cout,
+                            cntx.argv[0],
+                            cntx.parser.defaultAction());
+                } else {
+                    auto const& cmdIt = cntx.parser.commands().find(value.get());
+                    if (cmdIt == cntx.parser.commands().end()) {
+                        return Optional<Error>(makeError(BasicError::InvalidInput, "help"));
+                    }
+
+                    printer(std::cout,
+                            cmdIt->first,
+                            cmdIt->second);
+                }
+
+                return none;
+            }};
+}
+
+
+Parser::Command::CommandDict::value_type
+Parser::printVersionCmd(StringView appName, Version const& appVersion) {
+    return {"version", {
+                "Print version",
+                [appName, &appVersion]() -> Result<void, Error> {
+                    VersionPrinter(appName, appVersion)(std::cout);
+                    return Ok();
+                }
+               }};
+}
+
+
+Parser::Command::CommandDict::value_type
+Parser::printHelpCmd() {
+    return {"help", {
+            "Print help",
+            []() -> Result<void, Error> {
+                HelpFormatter printer(Parser::DefaultPrefix);
+//                printer(std::cout);
+
+                return Ok();
+            }
+        }};
 }
