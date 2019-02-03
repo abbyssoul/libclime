@@ -177,20 +177,6 @@ public:
             _callback(std::forward<F>(f))
         {}
 
-        Option(Option const& rhs) = default;
-
-        Option(Option&& rhs) noexcept = default;
-
-        Option& operator= (Option const& rhs) noexcept {
-            Option(rhs).swap(*this);
-
-            return *this;
-        }
-
-        Option& operator= (Option&& rhs) noexcept {
-            return swap(rhs);
-        }
-
         Option& swap(Option& rhs) noexcept {
             using std::swap;
             swap(_names, rhs._names);
@@ -233,8 +219,6 @@ public:
      */
     class Argument {
     public:
-        ~Argument() = default;
-
         Argument(Solace::StringLiteral name, Solace::StringLiteral description, Solace::StringView* value);
         Argument(Solace::StringLiteral name, Solace::StringLiteral description, Solace::int8* value);
         Argument(Solace::StringLiteral name, Solace::StringLiteral description, Solace::uint8* value);
@@ -255,20 +239,6 @@ public:
             _description(std::move(description)),
             _callback(std::forward<F>(callback))
         {}
-
-        Argument(Argument const& rhs) = default;
-
-        Argument(Argument&& rhs) noexcept = default;
-
-        Argument& operator= (Argument const& rhs) noexcept {
-            Argument(rhs).swap(*this);
-
-            return *this;
-        }
-
-        Argument& operator= (Argument&& rhs) noexcept {
-            return swap(rhs);
-        }
 
         Argument& swap(Argument& rhs) noexcept {
             std::swap(_name, rhs._name);
@@ -301,12 +271,6 @@ public:
 
         using CommandDict = std::map<Solace::StringView, Command>;
         using Action = std::function<Solace::Result<void, Solace::Error>()>;
-
-        ~Command() = default;
-
-        Command(Command const& rhs) = default;
-
-        Command(Command&& rhs) = default;
 
         template<typename F>
         Command(Solace::StringView description, F&& f) :
@@ -349,8 +313,6 @@ public:
             _arguments(arguments)
         {}
 
-        Command& operator= (Command const& rhs) = default;
-        Command& operator= (Command&& rhs) noexcept = default;
 
         Command& swap(Command& rhs) noexcept {
             std::swap(_description, rhs._description);
@@ -423,14 +385,9 @@ public:
 
 public:
 
-    ~Parser() = default;
-
     /// Default copy-constructor
     Parser(Parser const& rhs) = delete;
     Parser& operator= (Parser const& rhs) = delete;
-
-    /// Default move-constructor
-    Parser(Parser&& rhs) noexcept = default;
 
     /**
      * Construct default command line parser.
@@ -446,10 +403,6 @@ public:
      */
     Parser(Solace::StringView appDescription, std::initializer_list<Option> options);
 
-
-    Parser& operator= (Parser&& rhs) noexcept {
-        return swap(rhs);
-    }
 
     Parser& swap(Parser& rhs) noexcept {
         using std::swap;
@@ -475,7 +428,7 @@ public:
             return fail("Number of arguments can not be negative");
         }
 
-        return parse(Solace::arrayView(argv, argc));
+        return parse(Solace::arrayView(argv, static_cast<size_t>(argc)));
     }
 
     /**
