@@ -105,9 +105,7 @@ parseOptions(Parser::Context const& cntx,
         }
 
         // FIXME: C++17 destructuring: auto [argName, argValue] = parseOption(...);
-        auto res = parseOption(arg, prefix, separator);
-        auto const argName = std::get<0>(res);
-        auto argValue = Optional<StringView>{ std::move(res.second) };
+        auto [argName, argValue] = parseOption(arg, prefix, separator);
         auto consumeValue = false;
 
         if (argValue.isNone()) {  // No argument given in --opt=value format, need to examine next argv value

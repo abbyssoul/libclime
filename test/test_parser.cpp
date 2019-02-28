@@ -22,12 +22,14 @@
 #include <clime/parseUtils.hpp>
 
 #include <solace/posixErrorDomain.hpp>
+#include <solace/output_utils.hpp>
 
 #include <gtest/gtest.h>
 
 
 using namespace Solace;
 using namespace clime;
+
 
 class TestCommandlineParser: public ::testing::Test {
 
@@ -210,7 +212,7 @@ TEST_F(TestCommandlineParser, testBoolWithNoArgument) {
             .orElse([&parsedSuccessully](Error&& e) {
                     parsedSuccessully = false;
 
-                    FAIL() << (e.toString().data());
+                    FAIL() << e;
                 });
 
     EXPECT_TRUE(parsedSuccessully);
@@ -518,7 +520,7 @@ TEST_F(TestCommandlineParser, testInlineValues) {
             .orElse([&parsedSuccessully](Error&& e) {
                     parsedSuccessully = false;
 
-                    FAIL() << (e.toString().data());
+                    FAIL() << e;
                 });
 
     EXPECT_TRUE(parsedSuccessully);
@@ -562,7 +564,7 @@ TEST_F(TestCommandlineParser, testRepeatingOptions_Int) {
             .orElse([&parsedSuccessully](Error&& e) {
                     parsedSuccessully = false;
 
-                    FAIL() << (e.toString().data());
+                    FAIL() << e;
                 });
 
     EXPECT_TRUE(parsedSuccessully);
@@ -601,7 +603,7 @@ TEST_F(TestCommandlineParser, testRepeatingOptionsCustomHandler) {
             .orElse([&parsedSuccessully](Error&& e) {
                     parsedSuccessully = false;
 
-                    FAIL() << (e.toString().data());
+                    FAIL() << e;
                 });
 
     EXPECT_TRUE(parsedSuccessully);
@@ -905,7 +907,7 @@ TEST_F(TestCommandlineParser, testMandatoryCommandWithNoArgumentsSuccess) {
             .parse(countArgc(argv), argv);
 
     if (!result) {
-        FAIL() << (result.getError().toString().data());
+        FAIL() << result.getError();
     } else {
         EXPECT_TRUE(result.unwrap()().isOk());
     }
@@ -1002,7 +1004,7 @@ TEST_F(TestCommandlineParser, multipleCommandSelection) {
             .parse(countArgc(argv), argv);
 
     if (!parseResult) {
-        FAIL() << (parseResult.getError().toString().data());
+        FAIL() << parseResult.getError();
     } else {
         EXPECT_TRUE(parseResult.unwrap()().isOk());
     }
@@ -1058,7 +1060,7 @@ TEST_F(TestCommandlineParser, multipleCommandWithSimilarOptions) {
             .parse(countArgc(argv), argv);
 
     if (!result) {
-        FAIL() << (result.getError().toString().data());
+        FAIL() << result.getError();
     } else {
         EXPECT_TRUE(result.unwrap()().isOk());
     }
@@ -1091,7 +1093,7 @@ TEST_F(TestCommandlineParser, commandExecutionFails) {
             .parse(countArgc(argv), argv);
 
     if (!result) {
-        FAIL() << (result.getError().toString().data());
+        FAIL() << result.getError();
     } else {
         EXPECT_TRUE(result.unwrap()().isError());
     }
@@ -1161,7 +1163,7 @@ TEST_F(TestCommandlineParser, multipleCommandWithOptionsAndArguments) {
             .parse(countArgc(argv), argv);
 
     if (!result) {
-        FAIL() << (result.getError().toString().data());
+        FAIL() << result.getError();
     } else {
         EXPECT_TRUE(result.unwrap()().isOk());
     }
