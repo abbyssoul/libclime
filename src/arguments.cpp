@@ -47,8 +47,7 @@ parseIntArgument(T* dest, StringView const& value, const Parser::Context&) {
         return none;
     }
 
-    // TODO(abbyssoul): Result::getError() must return Optional<Error>
-    return Optional<Error>(val.moveError());
+	return val.moveError();
 }
 
 
@@ -62,13 +61,11 @@ parseBoolean(bool* dest, StringView value) {
         return none;
     }
 
-
-    // TODO(abbyssoul): Result::getError() must return Optional<Error>
-    return Optional<Error>(val.moveError());
+	return val.moveError();
 }
 
 
-}
+}  // anonymous namespace
 
 
 Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, StringView* dest)
@@ -190,8 +187,8 @@ Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral
 Parser::Option::Option(std::initializer_list<StringLiteral> names, StringLiteral desc, bool* dest)
     : Option(names, desc, Optionality::Optional,
              [dest](Optional<StringView> const& value, Context const&) -> Optional<Error> {
-                if (value.isSome()) {
-                    return parseBoolean(dest, value.get());
+				if (value) {
+					return parseBoolean(dest, *value);
                 }
 
                 *dest = true;
@@ -305,7 +302,8 @@ Parser::Argument::isTrailing() const noexcept {
 }
 
 
-bool Parser::Option::isMatch(StringView name) const noexcept {
+bool
+Parser::Option::isMatch(StringView name) const noexcept {
     for (const auto& optName : _names) {
         if (optName == name) {
             return true;
@@ -320,7 +318,6 @@ Optional<Error>
 Parser::Option::match(Optional<StringView> const& value, Context const& cntx) const {
     return _callback(value, cntx);
 }
-
 
 
 Optional<Error>

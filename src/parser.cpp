@@ -51,18 +51,18 @@ idleAction() noexcept {
 }
 
 
-Parser::Parser(StringView appDescription) :
-    _prefix(DefaultPrefix),
-    _valueSeparator(DefaultValueSeparator),
-    _defaultAction(std::move(appDescription), idleAction)
+Parser::Parser(StringView appDescription)
+	: _prefix{DefaultPrefix}
+	, _valueSeparator{DefaultValueSeparator}
+	, _defaultAction{std::move(appDescription), idleAction}
 {
 }
 
 
-Parser::Parser(StringView appDescription, std::initializer_list<Option> options) :
-    _prefix(DefaultPrefix),
-    _valueSeparator(DefaultValueSeparator),
-    _defaultAction(std::move(appDescription), idleAction, options)
+Parser::Parser(StringView appDescription, std::initializer_list<Option> options)
+	: _prefix{DefaultPrefix}
+	, _valueSeparator{DefaultValueSeparator}
+	, _defaultAction{std::move(appDescription), idleAction, options}
 {
 }
 
@@ -71,7 +71,7 @@ std::pair<StringView, Optional<StringView>>
 parseOption(StringView arg, char prefix, char valueSeparator) {
     StringView::size_type const startIndex = (arg.substring(1).startsWith(prefix)) ? 2 : 1;
     if (startIndex >= arg.length()) {
-        return std::make_pair(StringView(), none);
+		return std::make_pair(StringView{}, none);
     }
 
     auto endIndex = startIndex;
@@ -92,8 +92,11 @@ parseOptions(Parser::Context const& cntx,
     auto firstPositionalArgument = cntx.offset;
 
     // Parse array of strings until we error out or there is no more flags:
-    for (decltype(firstPositionalArgument) i = firstPositionalArgument; i < cntx.argv.size(); ++i, ++firstPositionalArgument) {
-        if (!cntx.argv[i]) {
+	for (decltype(firstPositionalArgument) i = firstPositionalArgument;
+		 i < cntx.argv.size();
+		 ++i, ++firstPositionalArgument) {
+
+		if (!cntx.argv[i]) {
             return Parser::fail("Invalid number of arguments!");
         }
 
@@ -109,9 +112,8 @@ parseOptions(Parser::Context const& cntx,
         auto consumeValue = false;
 
         if (argValue.isNone()) {  // No argument given in --opt=value format, need to examine next argv value
-            if (i + 1 < cntx.argv.size()) {  // Check that there are more arguments in the argv, thus we can expect a value
-                StringView nextArg{cntx.argv[i + 1]};
-
+			if (i + 1 < cntx.argv.size()) {  // Check there are more arguments in the argv, so we expect a value
+				auto nextArg = StringView{cntx.argv[i + 1]};
                 if (!nextArg.startsWith(prefix)) {
                     argValue = std::move(nextArg);
                     consumeValue = true;
@@ -128,7 +130,8 @@ parseOptions(Parser::Context const& cntx,
                 if (argValue.isNone() &&
                     option.getArgumentExpectations() == Parser::Optionality::Required) {
                     // Argument is required but none was given, error out!
-                    return Parser::fail("No value given"); //"Option '{}' expects a value, none were given", optCntx.name);
+					// Error message: "Option '{}' expects a value, but none were given", optCntx.name);
+					return Parser::fail("No value given");
                 }
 
                 if (consumeValue &&
@@ -146,13 +149,13 @@ parseOptions(Parser::Context const& cntx,
                                                     : argValue,
                                       optCntx);
                 if (r.isSome()) {
-                    return Err(r.get());
+					return r.move();
                 }
             }
         }
 
         if (numberMatched < 1) {
-            return Parser::fail("Unexpected option"); // '{}'", argName);
+			return Parser::fail("Unexpected option");
         }
     }
 
@@ -196,7 +199,7 @@ parseArguments(Parser::Context const& cntx,
         auto const arg = StringView {cntx.argv[positionalArgument]};
         auto maybeError = targetArg.match(arg, subCntx);
         if (maybeError) {
-            return Err(maybeError.move());
+			return maybeError.move();
         }
 
         if (i + 1 < arguments.size()) {
@@ -222,7 +225,7 @@ parseCommand(Parser::Command const& cmd, Parser::Context const& cntx) {
                                              cntx.parser.optionPrefix(),
                                              cntx.parser.valueSeparator());
     if (!optionsParsingResult) {
-        return Err(optionsParsingResult.moveError());
+		return optionsParsingResult.moveError();
     }
 
     auto const positionalArgument = optionsParsingResult.unwrap();
@@ -234,17 +237,17 @@ parseCommand(Parser::Command const& cmd, Parser::Context const& cntx) {
             auto const subcmdName = StringView {cntx.argv[positionalArgument]};
             auto const cmdIt = cmd.commands().find(subcmdName);
             if (cmdIt == cmd.commands().end()) {
-                return Parser::fail("Command not supported"); //, subcmdName);
+				return Parser::fail("Command not supported");
             }
 
             return parseCommand(cmdIt->second, cntx.withOffsetAndName(positionalArgument + 1, subcmdName));
         } else if (!cmd.arguments().empty()) {
             auto parseResult = parseArguments(cntx.withOffsetAndName(positionalArgument, {}), cmd.arguments());
             if (!parseResult) {
-                return Err(parseResult.moveError());
+				return parseResult.moveError();
             }
 
-            return Ok<Parser::ParseResult>(cmd.action());
+			return Ok(cmd.action());
         } else {
             return Parser::fail("Unexpected arguments given");
         }
@@ -252,7 +255,7 @@ parseCommand(Parser::Command const& cmd, Parser::Context const& cntx) {
     } else {
         if ((cmd.arguments().empty() && cmd.commands().empty()) ||
             (!cmd.arguments().empty() && cmd.arguments().back().isTrailing())) {
-            return  Ok<Parser::ParseResult>(cmd.action());
+			return Ok(cmd.action());
         }
 
         return Parser::fail("Not enough arguments");
@@ -264,7 +267,7 @@ Result<Parser::ParseResult, Error>
 Parser::parse(Solace::ArrayView<const char*> args) const {
     if (args.empty()) {
         if (_defaultAction.arguments().empty() && _defaultAction.commands().empty()) {
-            return Ok<Parser::ParseResult>(_defaultAction.action());
+			return Ok(_defaultAction.action());
         }
 
         return fail("Not enough arguments");

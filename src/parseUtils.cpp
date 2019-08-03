@@ -40,13 +40,14 @@ using namespace clime;
 
 auto conversionError(const char*, StringView) {
     // TODO(abbyssoul): Fix error message
-    return Err<Error>(makeError(GenericError::RANGE, "Value Conversion"));
+	return makeError(GenericError::RANGE, "Value Conversion");
 }
 
 
 template<typename T, bool isSigned = std::is_signed<T>::value>
 struct Longest {
 };
+
 
 template<typename T>
 struct Longest<T, true> {

@@ -22,7 +22,6 @@
 #include "clime/utils.hpp"
 #include "clime/parseUtils.hpp"
 
-//#include <solace/path.hpp>
 #include <solace/posixErrorDomain.hpp>
 #include <solace/output_utils.hpp>
 
@@ -124,7 +123,7 @@ Parser::Option
 Parser::printVersion(StringView appName, Version const& appVersion) {
     return {{"v", "version"}, "Print version", Parser::Optionality::NotRequired,
             [appName, &appVersion] (Optional<StringView> const&, Context const&) -> Optional<Error> {
-                VersionPrinter(appName, appVersion)
+				VersionPrinter{appName, appVersion}
                     (std::cout);
 
                 return none;
@@ -136,25 +135,25 @@ Parser::Option
 Parser::Parser::printHelp() {
     return {{"h", "help"}, "Print help", Parser::Optionality::NotRequired,
             [](Optional<StringView> const& value, Context const& cntx) -> Optional<Error> {
-                HelpFormatter printer(cntx.parser.optionPrefix());
+				HelpFormatter printer{cntx.parser.optionPrefix()};
 
-                if (value.isNone()) {
-                    printer(std::cout,
-                            cntx.argv[0],
-                            cntx.parser.defaultAction());
+				if (value) {
+					auto const& cmdIt = cntx.parser.commands().find(value.get());
+					if (cmdIt == cntx.parser.commands().end()) {
+						return makeError(BasicError::InvalidInput, "help");
+					}
+
+					printer(std::cout,
+							cmdIt->first,
+							cmdIt->second);
                 } else {
-                    auto const& cmdIt = cntx.parser.commands().find(value.get());
-                    if (cmdIt == cntx.parser.commands().end()) {
-                        return Optional<Error>(makeError(BasicError::InvalidInput, "help"));
-                    }
-
-                    printer(std::cout,
-                            cmdIt->first,
-                            cmdIt->second);
-                }
+					printer(std::cout,
+							cntx.argv[0],
+							cntx.parser.defaultAction());
+				}
 
                 return none;
-            }};
+			}};
 }
 
 
@@ -163,7 +162,7 @@ Parser::printVersionCmd(StringView appName, Version const& appVersion) {
     return {"version", {
                 "Print version",
                 [appName, &appVersion]() -> Result<void, Error> {
-                    VersionPrinter(appName, appVersion)(std::cout);
+					VersionPrinter{appName, appVersion}(std::cout);
                     return Ok();
                 }
                }};
@@ -175,7 +174,7 @@ Parser::printHelpCmd() {
     return {"help", {
             "Print help",
             []() -> Result<void, Error> {
-                HelpFormatter printer(Parser::DefaultPrefix);
+				HelpFormatter printer{Parser::DefaultPrefix};
 //                printer(std::cout);
 
                 return Ok();

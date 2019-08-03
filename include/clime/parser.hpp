@@ -254,7 +254,8 @@ public:
 
         bool isTrailing() const noexcept;
 
-        Solace::Optional<Solace::Error> match(Solace::StringView const& value, Context const& c) const;
+		Solace::Optional<Solace::Error>
+		match(Solace::StringView const& value, Context const& c) const;
 
     private:
         Solace::StringLiteral                               _name;
@@ -414,7 +415,7 @@ public:
     }
 
 
-    using ParseResult = std::function<Solace::Result<void, Solace::Error>()>;
+	using ParseResult = Command::Action;
 
     /**
      * Parse command line arguments and process all the flags.
