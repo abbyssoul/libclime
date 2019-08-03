@@ -1,9 +1,12 @@
+dist: xenial
 language: cpp
 compiler:
   - clang
   - gcc
 os:
   - linux
+env:
+  global:
 addons:
  apt:
    update: true
@@ -24,18 +27,19 @@ addons:
    - doxygen
    - libc6-dbg  # needed by Valgrind
    - valgrind
-   - ggcov
    - lcov
    - curl
  coverity_scan:
   project:
-      name: "abbyssoul/libclime"
-      description: "CLI parser for modern C++"
+    name: "abbyssoul/libclime"
+    description: "CLI parser for modern C++"
   notification_email: abbyssoul@gmail.com
-  build_command: make
+  build_command_prepend: "./configure --enable-coverage --disable-sanitizer"
+  build_command: make coverage_report
   branch_pattern: coverity_scan
 
 before_install:
+  - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
   - sudo -H pip3 install --upgrade pip
   - sudo -H pip3 install cpplint cpp-coveralls
   - sudo -H pip3 install conan --upgrade
@@ -49,17 +53,19 @@ install:
   - echo $CXX
   - $CXX --version
   - ld --version
+  - conan --version
   - conan profile new default --detect
-  - conan profile update settings.compiler.libcxx=libstdc++11 default
+  - if [ "${TRAVIS_COMPILER}" != "clang" ]; then conan profile update settings.compiler.libcxx=libstdc++11 default; fi
   - conan remote add abbyssoul https://api.bintray.com/conan/abbyssoul/public-conan
 
 script:
-  - ./configure --enable-sanitizer
-  - if [ "${COVERITY_SCAN_BRANCH}" != 1 ]; then make clean codecheck; fi
+  - ./configure --enable-coverage --enable-sanitizer && make clean;
+  - if [ "${COVERITY_SCAN_BRANCH}" != 1 ]; then make codecheck; fi
   - if [ "${COVERITY_SCAN_BRANCH}" != 1 ]; then make test; fi
-  - if [ "${COVERITY_SCAN_BRANCH}" != 1 ]; then ./configure --disable-sanitizer --enable-debug && make clean && make verify ; fi
+  # Disabled valgrind build as std::random_device causes failure on Valgrind-3.11.0 avaliable in travisCI
+  #- if [ "${COVERITY_SCAN_BRANCH}" != 1 ]; then ./configure --disable-sanitizer --enable-debug && make clean && make verify ; fi
 
 after_success:
-  - make clean coverage_report
+  - make coverage_report
   - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
   - coveralls-lcov --repo-token ${COVERALLS_TOKEN} coverage.info  # uploads to coveralls
