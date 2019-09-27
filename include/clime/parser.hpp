@@ -92,8 +92,8 @@ Solace::Error makeParserError(ParserError errorCode, Solace::StringLiteral tag) 
 class Parser {
 public:
 
-    static Solace::types::Err<Solace::Error> fail(Solace::StringLiteral tag) noexcept {
-        return makeParserError(ParserError::InvalidInput, tag);
+	static auto fail(Solace::StringLiteral tag) noexcept {
+		return makeParserError(ParserError::InvalidInput, tag);
     }
 
 public:

@@ -54,7 +54,7 @@ struct Longest<T, true> {
 
     using type = int64;  // long long;
 
-    static Result<type, Error> parse(StringView value) {
+	static Result<T, Error> parse(StringView value) {
         errno = 0;
         char* pEnd = nullptr;
         // FIXME(abbyssoul): The use of value.data() here is not safe for substrings.
@@ -71,8 +71,8 @@ struct Longest<T, true> {
             result < std::numeric_limits<T>::min())
             return conversionError("Value is outside of bounds: ", value);
 
-        return Ok(result);
-    }
+		return Ok(narrow_cast<T>(result));
+	}
 };
 
 
@@ -81,7 +81,7 @@ struct Longest<T, false> {
 
     using type = uint64;  // unsigned long long;
 
-    static Result<type, Error> parse(StringView value) {
+	static Result<T, Error> parse(StringView value) {
         errno = 0;
         char* pEnd = nullptr;
         // FIXME(abbyssoul): The use of value.data() here is not safe for substrings.
@@ -98,7 +98,8 @@ struct Longest<T, false> {
             result < std::numeric_limits<T>::min())
             return conversionError("Value is outside of bounds: ", value);
 
-        return Ok(result);
+		// Note: Cast is safe as value range is checked above
+		return Ok(narrow_cast<T>(result));
     }
 };
 
