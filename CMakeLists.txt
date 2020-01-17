@@ -1,9 +1,8 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 project(clime)
 set(PROJECT_DESCRIPTION "Command line arguments parser for modern C++")
 
 
-option(CLIME_GTEST_SUPPORT "Build without GTEST" ON)
 option(COVERAGE "Generate coverage data" OFF)
 option(SANITIZE "Enable 'sanitize' compiler flag" OFF)
 option(PROFILE "Enable profile information" OFF)
@@ -20,9 +19,6 @@ configure_file(lib${PROJECT_NAME}.pc.in lib${PROJECT_NAME}.pc @ONLY)
 # ---------------------------------
 # Build project dependencies
 # ---------------------------------
-set(CLIME_EXTERNAL_DEP_GTEST_DIR "external/gtest/googletest"
-    CACHE PATH "The path to the Google Test framework.")
-
 include_directories(include)
 
 add_subdirectory(src)

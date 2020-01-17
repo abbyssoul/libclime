@@ -6,3 +6,7 @@ libsolace:shared=False
 
 [generators]
 cmake
+
+[build_requires]
+gtest/1.10.0
+
