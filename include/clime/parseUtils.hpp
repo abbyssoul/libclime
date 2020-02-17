@@ -30,73 +30,73 @@
 
 namespace clime {
 
-Solace::Result<bool, Solace::Error> tryParseBoolean(Solace::StringView value);
+Solace::Result<bool, Solace::Error> tryParseBoolean(Solace::StringView value) noexcept;
 
-Solace::Result<Solace::int8, Solace::Error> tryParseInt8(Solace::StringView value);
+Solace::Result<Solace::int8, Solace::Error> tryParseInt8(Solace::StringView value) noexcept;
 
-Solace::Result<Solace::int16, Solace::Error> tryParseInt16(Solace::StringView value);
+Solace::Result<Solace::int16, Solace::Error> tryParseInt16(Solace::StringView value) noexcept;
 
-Solace::Result<Solace::int32, Solace::Error> tryParseInt32(Solace::StringView value);
+Solace::Result<Solace::int32, Solace::Error> tryParseInt32(Solace::StringView value) noexcept;
 
-Solace::Result<Solace::int64, Solace::Error> tryParseInt64(Solace::StringView value);
+Solace::Result<Solace::int64, Solace::Error> tryParseInt64(Solace::StringView value) noexcept;
 
-Solace::Result<Solace::uint8, Solace::Error> tryParseUInt8(Solace::StringView value);
+Solace::Result<Solace::uint8, Solace::Error> tryParseUInt8(Solace::StringView value) noexcept;
 
-Solace::Result<Solace::uint16, Solace::Error> tryParseUInt16(Solace::StringView value);
+Solace::Result<Solace::uint16, Solace::Error> tryParseUInt16(Solace::StringView value) noexcept;
 
-Solace::Result<Solace::uint32, Solace::Error> tryParseUInt32(Solace::StringView value);
+Solace::Result<Solace::uint32, Solace::Error> tryParseUInt32(Solace::StringView value) noexcept;
 
-Solace::Result<Solace::uint64, Solace::Error> tryParseUInt64(Solace::StringView value);
+Solace::Result<Solace::uint64, Solace::Error> tryParseUInt64(Solace::StringView value) noexcept;
 
 
 template<typename T>
-Solace::Result<T, Solace::Error> tryParse(Solace::StringView value);
+Solace::Result<T, Solace::Error> tryParse(Solace::StringView value) noexcept;
 
 
 template<>
 inline
-Solace::Result<bool, Solace::Error> tryParse<bool>(Solace::StringView value) { return tryParseBoolean(value); }
+Solace::Result<bool, Solace::Error> tryParse<bool>(Solace::StringView value) noexcept { return tryParseBoolean(value); }
 
 template<>
 inline
 Solace::Result<Solace::int8, Solace::Error>
-tryParse<Solace::int8>(Solace::StringView value) { return tryParseInt8(value); }
+tryParse<Solace::int8>(Solace::StringView value) noexcept { return tryParseInt8(value); }
 
 template<>
 inline
 Solace::Result<Solace::int16, Solace::Error>
-tryParse<Solace::int16>(Solace::StringView value) { return tryParseInt16(value); }
+tryParse<Solace::int16>(Solace::StringView value) noexcept { return tryParseInt16(value); }
 
 template<>
 inline
 Solace::Result<Solace::int32, Solace::Error>
-tryParse<Solace::int32>(Solace::StringView value) { return tryParseInt32(value); }
+tryParse<Solace::int32>(Solace::StringView value) noexcept { return tryParseInt32(value); }
 
 template<>
 inline
 Solace::Result<Solace::int64, Solace::Error>
-tryParse<Solace::int64>(Solace::StringView value) { return tryParseInt64(value); }
+tryParse<Solace::int64>(Solace::StringView value) noexcept { return tryParseInt64(value); }
 
 
 template<>
 inline
 Solace::Result<Solace::uint8, Solace::Error>
-tryParse<Solace::uint8>(Solace::StringView value) { return tryParseUInt8(value); }
+tryParse<Solace::uint8>(Solace::StringView value) noexcept { return tryParseUInt8(value); }
 
 template<>
 inline
 Solace::Result<Solace::uint16, Solace::Error>
-tryParse<Solace::uint16>(Solace::StringView value) { return tryParseUInt16(value); }
+tryParse<Solace::uint16>(Solace::StringView value) noexcept { return tryParseUInt16(value); }
 
 template<>
 inline
 Solace::Result<Solace::uint32, Solace::Error>
-tryParse<Solace::uint32>(Solace::StringView value) { return tryParseUInt32(value); }
+tryParse<Solace::uint32>(Solace::StringView value) noexcept { return tryParseUInt32(value); }
 
 template<>
 inline
 Solace::Result<Solace::uint64, Solace::Error>
-tryParse<Solace::uint64>(Solace::StringView value) { return tryParseUInt64(value); }
+tryParse<Solace::uint64>(Solace::StringView value) noexcept { return tryParseUInt64(value); }
 
 
 }  // End of namespace clime

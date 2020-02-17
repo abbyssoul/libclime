@@ -38,20 +38,25 @@ int main(int argc, const char **argv) {
     auto floatValue = 0.0f;
     auto userName = StringView{getenv("USER")};
 
-    auto const res = Parser("Solace cli single action example", {
+	auto const res = Parser("clime: single action example", {
                 Parser::printHelp(),
                 Parser::printVersion(kAppName, kAppVersion),
 
-                {{"i", "intOption"}, "Some useless parameter for the demo", &intValue},
-                {{"fOption"}, "Foating point value for the demo", &floatValue},
-                {{"u", "name"}, "Greet user name", &userName}
+				{{"i", "intOption"},	"useless int parameter for the demo", &intValue},
+				{{"fOption"},			"floating point value for the demo", &floatValue},
+				{{"u", "name"},			"user name to greet", &userName}
             })
             .parse(argc, argv);
 
     if (!res) {
-        std::cerr << res.getError();
-        return EXIT_FAILURE;
-    }
+		auto& error = res.getError();
+		if (error) {
+			std::cerr << res.getError() << '\n';
+			return EXIT_FAILURE;
+		}
+
+		return EXIT_SUCCESS;
+	}
 
     std::cout << "Hello '" << userName << "'" << std::endl;
 

@@ -14,7 +14,7 @@
 *  limitations under the License.
 */
 /*******************************************************************************
- * libclime: Command line parser
+ * libclime: Command line arguments parser
  *	@file		clime/parser.hpp
  *	@brief		Commandline arguments Parser
  ******************************************************************************/
@@ -22,14 +22,14 @@
 #ifndef CLIME_PARSER_HPP
 #define CLIME_PARSER_HPP
 
+#include "errorCategory.hpp"
+
 #include <solace/stringView.hpp>
 #include <solace/result.hpp>
-#include <solace/error.hpp>
+
 #include <solace/array.hpp>
 #include <solace/vector.hpp>
 #include <solace/version.hpp>
-
-// TODO(abbyssoul): consider moving away from std::function #include "solace/delegate.hpp"
 #include <solace/utils.hpp>
 
 // Note unordered map has issues with class not being fully defined.
@@ -39,15 +39,6 @@
 
 
 namespace clime {
-
-enum class ParserError : int {
-    InvalidInput = 1,
-    OptionParsing,
-};
-
-
-Solace::Error makeParserError(ParserError errorCode, Solace::StringLiteral tag) noexcept;
-
 
 /**
  * Command line parser
@@ -92,8 +83,8 @@ Solace::Error makeParserError(ParserError errorCode, Solace::StringLiteral tag) 
 class Parser {
 public:
 
-	static auto fail(Solace::StringLiteral tag) noexcept {
-		return makeParserError(ParserError::InvalidInput, tag);
+	static auto fail(ParserError errCode, Solace::StringLiteral tag) noexcept {
+		return makeParserError(errCode, tag);
     }
 
 public:
@@ -140,18 +131,26 @@ public:
     /**
      * Argument processing policy for custom callbacks
      */
-    enum class Optionality {
+	enum class ArgumentValue {
         Optional,          //!< Argument is optional. It is not an error to have option with or without an argument.
         Required,          //!< Argument is required. It is an error if the option is given without an value.
         NotRequired        //!< Argument is not expected. It is an error to give an option with an argument value.
     };
 
+	enum class OptionParserAction {
+		Continue,
+		StopOptionProcessing,
+		Abort
+	};
+
 
     /**
      * An optional argument / flag object used by command line parser.
      */
-    class Option {
-    public:
+	struct Option {
+		using OptionCallback = std::function<
+			Solace::Optional<Error> (Solace::Optional<Solace::StringView> const&, Context const&)>;
+
         Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::StringView* val);
         Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::int8* value);
         Option(std::initializer_list<Solace::StringLiteral> names, Solace::StringLiteral desc, Solace::uint8* value);
@@ -169,12 +168,12 @@ public:
         template<typename F>
         Option(std::initializer_list<Solace::StringLiteral> names,
                Solace::StringLiteral description,
-               Optionality expectsArgument,
-               F&& f) :
-            _names(names),
-            _description(std::move(description)),
-            _expectsArgument(expectsArgument),
-            _callback(std::forward<F>(f))
+			   ArgumentValue expectsArgument,
+			   F&& f)
+			: _names{Solace::mv(names)}
+			, _description{Solace::mv(description)}
+			, _expectsArgument{expectsArgument}
+			, _callback{Solace::fwd<F>(f)}
         {}
 
         Option& swap(Option& rhs) noexcept {
@@ -189,27 +188,27 @@ public:
 
         bool isMatch(Solace::StringView argName) const noexcept;
 
-        Solace::Optional<Solace::Error>
+		Solace::Optional<Error>
         match(Solace::Optional<Solace::StringView> const& value, Context const& c) const;
 
-        const std::vector<Solace::StringLiteral>& names() const noexcept    { return _names; }
-        const Solace::StringLiteral& description() const noexcept           { return _description; }
+		auto const& names() const noexcept    { return _names; }
 
-        Optionality getArgumentExpectations() const noexcept     { return _expectsArgument; }
+		Solace::StringView description() const noexcept           { return _description; }
+
+		ArgumentValue argumentExpectations() const noexcept     { return _expectsArgument; }
 
     private:
         //!< Long name of the option, Maybe empty if not specified.
-        std::vector<Solace::StringLiteral>          _names;
+		std::vector<Solace::StringLiteral>	_names;
 
         //!< Human-readable description of the option.
-        Solace::StringLiteral                       _description;
+		Solace::StringView					_description;
 
         //!< Enum to indicate if this option expects a value or not.
-        Optionality                      _expectsArgument;
+		ArgumentValue						_expectsArgument;
 
         //!< A callback to be called when this option is encountered in the input cmd line.
-        std::function<Solace::Optional<Solace::Error> (Solace::Optional<Solace::StringView> const&, Context const&)>
-        _callback;
+		OptionCallback						_callback;
     };
 
 
@@ -217,8 +216,7 @@ public:
      * This class represent a mandatory argument to be expected by a parser.
      * It is a parsing error if no mandatory arguments is provided.
      */
-    class Argument {
-    public:
+	struct Argument {
         Argument(Solace::StringLiteral name, Solace::StringLiteral description, Solace::StringView* value);
         Argument(Solace::StringLiteral name, Solace::StringLiteral description, Solace::int8* value);
         Argument(Solace::StringLiteral name, Solace::StringLiteral description, Solace::uint8* value);
@@ -234,16 +232,18 @@ public:
 
         template<typename F>
         Argument(Solace::StringLiteral name, Solace::StringLiteral description,
-                 F&& callback) :
-            _name(std::move(name)),
-            _description(std::move(description)),
-            _callback(std::forward<F>(callback))
+				 F&& callback)
+			: _name{Solace::mv(name)}
+			, _description{Solace::mv(description)}
+			, _callback{Solace::fwd<F>(callback)}
         {}
 
         Argument& swap(Argument& rhs) noexcept {
-            std::swap(_name, rhs._name);
-            std::swap(_description, rhs._description);
-            std::swap(_callback, rhs._callback);
+			using std::swap;
+
+			swap(_name, rhs._name);
+			swap(_description, rhs._description);
+			swap(_callback, rhs._callback);
 
             return (*this);
         }
@@ -254,13 +254,13 @@ public:
 
         bool isTrailing() const noexcept;
 
-		Solace::Optional<Solace::Error>
+		Solace::Optional<Error>
 		match(Solace::StringView const& value, Context const& c) const;
 
     private:
         Solace::StringLiteral                               _name;
         Solace::StringLiteral                               _description;
-        std::function<Solace::Optional<Solace::Error> (Solace::StringView, Context const&)>    _callback;
+		std::function<Solace::Optional<Error> (Solace::StringView, Context const&)>    _callback;
     };
 
 
@@ -271,56 +271,58 @@ public:
     public:
 
         using CommandDict = std::map<Solace::StringView, Command>;
-        using Action = std::function<Solace::Result<void, Solace::Error>()>;
+		using Action = std::function<Solace::Result<void, Error>()>;
 
         template<typename F>
-        Command(Solace::StringView description, F&& f) :
-            _description(std::move(description)),
-            _callback(std::forward<F>(f)),
-            _options()
+		Command(Solace::StringView description, F&& f)
+			: _description{Solace::mv(description)}
+			, _callback{Solace::fwd<F>(f)}
+			, _options{}
         {}
 
         template<typename F>
         Command(Solace::StringView description,
                 F&& f,
-                std::initializer_list<Option> options) :
-            _description(std::move(description)),
-            _callback(std::forward<F>(f)),
-            _options(options),
-            _commands(),
-            _arguments()
-        {}
+				std::initializer_list<Option> options)
+			: _description{Solace::mv(description)}
+			, _callback{Solace::fwd<F>(f)}
+			, _options{options}
+			, _commands{}
+			, _arguments{}
+		{}
 
         template<typename F>
         Command(Solace::StringView description,
                 std::initializer_list<Argument> arguments,
-                F&& f) :
-            _description(std::move(description)),
-            _callback(std::forward<F>(f)),
-            _options(),
-            _commands(),
-            _arguments(arguments)
+				F&& f)
+			: _description{Solace::mv(description)}
+			, _callback{Solace::fwd<F>(f)}
+			, _options{}
+			, _commands{}
+			, _arguments{arguments}
         {}
 
         template<typename F>
         Command(Solace::StringView description,
                 std::initializer_list<Argument> arguments,
                 F&& f,
-                std::initializer_list<Option> options) :
-            _description(std::move(description)),
-            _callback(std::forward<F>(f)),
-            _options(options),
-            _commands(),
-            _arguments(arguments)
-        {}
+				std::initializer_list<Option> options)
+			: _description{Solace::mv(description)}
+			, _callback{Solace::fwd<F>(f)}
+			, _options{options}
+			, _commands{}
+			, _arguments{arguments}
+		{}
 
 
         Command& swap(Command& rhs) noexcept {
-            std::swap(_description, rhs._description);
-            std::swap(_callback, rhs._callback);
-            std::swap(_options, rhs._options);
-            std::swap(_commands, rhs._commands);
-            std::swap(_arguments, rhs._arguments);
+			using std::swap;
+
+			swap(_description, rhs._description);
+			swap(_callback, rhs._callback);
+			swap(_options, rhs._options);
+			swap(_commands, rhs._commands);
+			swap(_arguments, rhs._arguments);
 
             return (*this);
         }
@@ -338,7 +340,6 @@ public:
         }
 
         const CommandDict&  commands() const noexcept  { return _commands; }
-//        Command& commands(std::initializer_list<CommandDict::value_type> commands) {
         Command& commands(std::initializer_list<std::pair<Solace::StringView const, Command>> commands) {
             _commands = commands;
             return *this;
@@ -356,7 +357,7 @@ public:
 
         template<typename F>
         Command& action(F&& f) {
-            _callback = std::forward<F>(f);
+			_callback = Solace::fwd<F>(f);
             return *this;
         }
 
@@ -423,10 +424,10 @@ public:
      * @param argv An array of string that represent command line argument tokens.
      * @return Result of parsing: Either a pointer to the parser or an error.
      */
-    Solace::Result<ParseResult, Solace::Error>
+	Solace::Result<ParseResult, Error>
     parse(int argc, const char* argv[]) const {
         if (argc < 0) {
-            return fail("Number of arguments can not be negative");
+			return fail(ParserError::InvalidNumberOfArgs, "Number of arguments can not be negative");
         }
 
         return parse(Solace::arrayView(argv, static_cast<size_t>(argc)));
@@ -438,7 +439,7 @@ public:
      * @param argv An array of string that represent command line argument tokens.
      * @return Result of parsing: Either a pointer to the parser or an error.
      */
-    Solace::Result<ParseResult, Solace::Error>
+	Solace::Result<ParseResult, Error>
     parse(Solace::ArrayView<const char*> args) const;
 
 
@@ -551,7 +552,7 @@ public:
 
     template<typename F>
     Command const& defaultAction(F&& f) {
-        _defaultAction.action(std::forward<F>(f));
+		_defaultAction.action(Solace::fwd<F>(f));
 
         return _defaultAction;
     }

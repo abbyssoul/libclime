@@ -34,18 +34,18 @@ static const Version                kAppVersion = Version(0, 0, 1, "dev");
 
 static uint intValue = 3;
 static float32 floatValue = 0.0f;
-static StringView userName(getenv("USER"));
+static StringView userName{getenv("USER")};
 
 
 Result<void, Error> sayHi() {
-    std::cout << "Hello '" << userName << "'" << std::endl;
+	std::cout << "Hello '" << userName << "'" << '\n';
 
     return Ok();
 }
 
 Result<void, Error> list() {
     for (uint i = 0; i < intValue; ++i) {
-        std::cout << " -" << i << std::endl;
+		std::cout << " - " << i << '\n';
     }
 
     return Ok();
@@ -55,11 +55,13 @@ Result<void, Error> list() {
 static int addArg_1 = 0;
 static int addArg_2 = 0;
 
-Result<void, Error> addNumbers() {
-    std::cout << addArg_1 << " + " << addArg_2 << " = " << addArg_1 + addArg_2 << std::endl;
+Result<void, Error>
+addNumbers() {
+	std::cout << addArg_1 << " + " << addArg_2 << " = " << addArg_1 + addArg_2 << '\n';
 
     return Ok();
 }
+
 
 int main(int argc, const char **argv) {
 
@@ -67,15 +69,14 @@ int main(int argc, const char **argv) {
                 Parser::printHelp(),
                 Parser::printVersion(kAppName, kAppVersion),
 
-                {{"i", "listCounter"}, "Listing size", &intValue},
-                {{"fOption"}, "Foating point value for the demo", &floatValue},
-                {{"u", "name"}, "Greet user name", &userName}
+				{{"i", "listCounter"},	"Listing size", &intValue},
+				{{"fOption"},			"Foating point value for the demo", &floatValue},
+				{{"u", "name"},			"Greet user name", &userName}
             })
             .commands({
                           {"greet", {"Say Hi to the user", sayHi}},
                           {"count", {"Print n numbers", list}},
-                          {"add", {"Add numbers",
-                                   {
+						  {"add",	{"Add numbers", {
                                        {"arg1", "1st argument", &addArg_1},
                                        {"arg2", "2nd argument", &addArg_2}
                                    },
@@ -83,11 +84,15 @@ int main(int argc, const char **argv) {
             })
             .parse(argc, argv);
 
-    if (res) {
-        res.unwrap()();  // Do the selected action.
-        return EXIT_SUCCESS;
-    } else {
-        std::cerr << res.getError().toString() << std::endl;
-        return EXIT_FAILURE;
-    }
+	if (!res) {
+		auto& error = res.getError();
+		if (error) {
+			std::cerr << res.getError().toString() << '\n';
+			return EXIT_FAILURE;
+		}
+		return EXIT_SUCCESS;
+	}
+
+	res.unwrap()();  // Do the selected action.
+	return EXIT_SUCCESS;
 }

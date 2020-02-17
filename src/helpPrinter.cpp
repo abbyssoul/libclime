@@ -36,11 +36,10 @@ using namespace Solace;
 using namespace clime;
 
 
-namespace {
+namespace /* anonymous */ {
+
 void formatOption(std::ostream& output, char prefixChar, Parser::Option const& option) {
     std::stringstream s;
-    s << "  ";
-
     bool chained = false;
     for (auto const& optName : option.names()) {
         if (chained) {
@@ -56,13 +55,18 @@ void formatOption(std::ostream& output, char prefixChar, Parser::Option const& o
         chained = true;
     }
 
-    output << std::left << std::setw(26) << s.str() << option.description() << std::endl;
+	output << "  "
+		   << std::left << std::setw(26) << s.str()
+		   << option.description()
+		   << '\n';
 }
 
 
 void formatCommand(std::ostream& output, StringView name, Parser::Command const& cmd) {
-    output << "  " << std::left << std::setw(14)
-            << name << cmd.description() << std::endl;
+	output << "  "
+		   << std::left << std::setw(16) << name << ' '
+		   << cmd.description()
+		   << '\n';
 }
 
 }  // namespace
@@ -70,10 +74,10 @@ void formatCommand(std::ostream& output, StringView name, Parser::Command const&
 
 void
 HelpFormatter::operator() (std::ostream& output,
-                           StringView name,
+						   StringView progname,
                            Parser::Command const& cmd
                            ) {
-    output << "Usage: " << name;  // Path::parse(c.argv[0]).getBasename();
+	output << "Usage: " << progname;  // Path::parse(c.argv[0]).getBasename();
 
     if (!cmd.options().empty()) {
         output << " [options]";
@@ -90,11 +94,11 @@ HelpFormatter::operator() (std::ostream& output,
         output << " <command>";
     }
 
-    output << std::endl;
-    output << cmd.description() << std::endl;
+	output << '\n';
+	output << cmd.description() << '\n';
 
     if (!cmd.options().empty()) {
-        output << "Options:" << std::endl;
+		output << "Options:\n";
 
         for (auto const& opt : cmd.options()) {
             formatOption(output, _optionsPrefix, opt);
@@ -102,7 +106,7 @@ HelpFormatter::operator() (std::ostream& output,
     }
 
     if (!cmd.commands().empty()) {
-        output << "Commands:" << std::endl;
+		output << "Commands:\n";
 
         for (auto const& subcmd : cmd.commands()) {
             formatCommand(output, subcmd.first, subcmd.second);
@@ -121,21 +125,21 @@ VersionPrinter::operator() (std::ostream& output) {
 
 Parser::Option
 Parser::printVersion(StringView appName, Version const& appVersion) {
-    return {{"v", "version"}, "Print version", Parser::Optionality::NotRequired,
+    return {{"v", "version"}, "Print version", Parser::ArgumentValue::NotRequired,
             [appName, &appVersion] (Optional<StringView> const&, Context const&) -> Optional<Error> {
 				VersionPrinter{appName, appVersion}
                     (std::cout);
 
-                return none;
-            }};
+				return makeParserError(ParserError::NoError, "version");
+			}};
 }
 
 
 Parser::Option
 Parser::Parser::printHelp() {
-    return {{"h", "help"}, "Print help", Parser::Optionality::NotRequired,
-            [](Optional<StringView> const& value, Context const& cntx) -> Optional<Error> {
-				HelpFormatter printer{cntx.parser.optionPrefix()};
+	return {{"h", "help"}, "Print help", Parser::ArgumentValue::Optional,
+			[](Optional<StringView> const& value, Context const& cntx) -> Optional<Error> {
+				auto printer = HelpFormatter{cntx.parser.optionPrefix()};
 
 				if (value) {
 					auto const& cmdIt = cntx.parser.commands().find(value.get());
@@ -152,7 +156,7 @@ Parser::Parser::printHelp() {
 							cntx.parser.defaultAction());
 				}
 
-                return none;
+				return makeParserError(ParserError::NoError, "help");
 			}};
 }
 

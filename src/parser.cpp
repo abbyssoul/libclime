@@ -37,13 +37,6 @@ const char Parser::DefaultPrefix = '-';
 const char Parser::DefaultValueSeparator = '=';
 
 
-const AtomValue kParserErrorCatergory = atom("cli");
-
-
-Error clime::makeParserError(ParserError errorCode, StringLiteral tag) noexcept {
-    return Error{kParserErrorCatergory, static_cast<int>(errorCode), tag};
-}
-
 
 Result<void, Error>
 idleAction() noexcept {
@@ -54,7 +47,7 @@ idleAction() noexcept {
 Parser::Parser(StringView appDescription)
 	: _prefix{DefaultPrefix}
 	, _valueSeparator{DefaultValueSeparator}
-	, _defaultAction{std::move(appDescription), idleAction}
+	, _defaultAction{mv(appDescription), idleAction}
 {
 }
 
@@ -62,7 +55,7 @@ Parser::Parser(StringView appDescription)
 Parser::Parser(StringView appDescription, std::initializer_list<Option> options)
 	: _prefix{DefaultPrefix}
 	, _valueSeparator{DefaultValueSeparator}
-	, _defaultAction{std::move(appDescription), idleAction, options}
+	, _defaultAction{mv(appDescription), idleAction, options}
 {
 }
 
@@ -97,7 +90,7 @@ parseOptions(Parser::Context const& cntx,
 		 ++i, ++firstPositionalArgument) {
 
 		if (!cntx.argv[i]) {
-            return Parser::fail("Invalid number of arguments!");
+			return Parser::fail(ParserError::InvalidInput, "null string as input");
         }
 
         auto const arg = StringView{cntx.argv[i]};
@@ -107,7 +100,6 @@ parseOptions(Parser::Context const& cntx,
             break;
         }
 
-        // FIXME: C++17 destructuring: auto [argName, argValue] = parseOption(...);
         auto [argName, argValue] = parseOption(arg, prefix, separator);
         auto consumeValue = false;
 
@@ -128,14 +120,14 @@ parseOptions(Parser::Context const& cntx,
         for (auto& option : options) {
             if (option.isMatch(argName)) {
                 if (argValue.isNone() &&
-                    option.getArgumentExpectations() == Parser::Optionality::Required) {
+					Parser::ArgumentValue::Required == option.argumentExpectations()) {
                     // Argument is required but none was given, error out!
 					// Error message: "Option '{}' expects a value, but none were given", optCntx.name);
-					return Parser::fail("No value given");
+					return Parser::fail(ParserError::ValueExpected, "No value given");
                 }
 
                 if (consumeValue &&
-                    option.getArgumentExpectations() != Parser::Optionality::NotRequired) {
+					Parser::ArgumentValue::NotRequired != option.argumentExpectations()) {
                     consumeValue = false;
                     // Adjust current index in the array
                     ++i;
@@ -144,18 +136,18 @@ parseOptions(Parser::Context const& cntx,
 
                 numberMatched += 1;
 
-                auto r = option.match((option.getArgumentExpectations() == Parser::Optionality::NotRequired)
-                                                    ? none
-                                                    : argValue,
-                                      optCntx);
-                if (r.isSome()) {
+				auto r = option.match((Parser::ArgumentValue::NotRequired == option.argumentExpectations())
+									  ? none
+									  : argValue,
+									  optCntx);
+				if (r.isSome()) {
 					return r.move();
                 }
             }
         }
 
         if (numberMatched < 1) {
-			return Parser::fail("Unexpected option");
+			return Parser::fail(ParserError::UnexpectedValue, "Unexpected option");
         }
     }
 
@@ -174,11 +166,11 @@ parseArguments(Parser::Context const& cntx,
     auto const nbPositionalArguments = cntx.argv.size() - cntx.offset;
 
     if (nbPositionalArguments < arguments.size() && !expectsTrailingArgument) {
-        return Parser::fail("Not enough arguments");
+		return Parser::fail(ParserError::InvalidNumberOfArgs, "Not enough arguments");
     }
 
     if (!expectsTrailingArgument && nbPositionalArguments > arguments.size()) {
-        return Parser::fail("Too many arguments");
+		return Parser::fail(ParserError::InvalidNumberOfArgs, "Too many arguments");
     }
 
     auto positionalArgument = cntx.offset;
@@ -188,9 +180,9 @@ parseArguments(Parser::Context const& cntx,
          i < arguments.size() && positionalArgument < cntx.argv.size();
          ++positionalArgument) {
 
-        // Make sure that we didn't hit argv end:
+		// Check that we didn't hit argv end:
         if (!cntx.argv[positionalArgument]) {
-            return Parser::fail("Invalid number of arguments!");
+			return Parser::fail(ParserError::InvalidInput, "null string as input");
         }
 
         auto& targetArg = arguments[i];
@@ -213,7 +205,7 @@ parseArguments(Parser::Context const& cntx,
         return Ok(positionalArgument);
     }
 
-    return Parser::fail("Not enough arguments");
+	return Parser::fail(ParserError::InvalidNumberOfArgs, "Not enough arguments");
 }
 
 
@@ -237,7 +229,7 @@ parseCommand(Parser::Command const& cmd, Parser::Context const& cntx) {
             auto const subcmdName = StringView {cntx.argv[positionalArgument]};
             auto const cmdIt = cmd.commands().find(subcmdName);
             if (cmdIt == cmd.commands().end()) {
-				return Parser::fail("Command not supported");
+				return Parser::fail(ParserError::UnexpectedValue, "Command not supported");
             }
 
             return parseCommand(cmdIt->second, cntx.withOffsetAndName(positionalArgument + 1, subcmdName));
@@ -249,16 +241,17 @@ parseCommand(Parser::Command const& cmd, Parser::Context const& cntx) {
 
 			return Ok(cmd.action());
         } else {
-            return Parser::fail("Unexpected arguments given");
+			return Parser::fail(ParserError::UnexpectedValue, "Unexpected arguments given");
         }
 
     } else {
-        if ((cmd.arguments().empty() && cmd.commands().empty()) ||
-            (!cmd.arguments().empty() && cmd.arguments().back().isTrailing())) {
+		auto const& arguments = cmd.arguments();
+		if ((arguments.empty() && cmd.commands().empty()) ||
+			(!arguments.empty() && arguments.back().isTrailing())) {
 			return Ok(cmd.action());
         }
 
-        return Parser::fail("Not enough arguments");
+		return Parser::fail(ParserError::InvalidNumberOfArgs, "Not enough arguments");
     }
 }
 
@@ -270,7 +263,7 @@ Parser::parse(Solace::ArrayView<const char*> args) const {
 			return Ok(_defaultAction.action());
         }
 
-        return fail("Not enough arguments");
+		return fail(ParserError::InvalidNumberOfArgs, "Not enough arguments");
     }
 
     return parseCommand(_defaultAction, {
