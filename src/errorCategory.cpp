@@ -52,7 +52,7 @@ struct ParserErrorDomain final : public ErrorDomain {
 	}
 };
 
-const ParserErrorDomain kParserErrorDomain{};
+ParserErrorDomain kParserErrorDomain{};
 
 auto const rego_generic = registerErrorDomain(kParserErrorCatergory, kParserErrorDomain);
 
