@@ -82,12 +82,6 @@ namespace clime {
  */
 class Parser {
 public:
-
-	static auto fail(ParserError errCode, Solace::StringLiteral tag) noexcept {
-		return makeParserError(errCode, tag);
-    }
-
-public:
     /**
      * Parser context.
      * This object represents the current state of parsing.
@@ -95,36 +89,37 @@ public:
      * It also can be used to communicate back to the parser if an interruption is required.
      */
     struct Context {
+		using ArgVector = Solace::ArrayView<char const*>;
+		using size_type = ArgVector::size_type;
 
         /// Individual command line arguments the parse method has been given.
-        const Solace::ArrayView<const char*> argv;
+		ArgVector const argv;
 
         /// Current parser offset into argv.
-        const Solace::ArrayView<const char*>::size_type offset;
+		size_type offset;
 
         /// Name of the option / argument being parsed.
-        const Solace::StringView name;
+		Solace::StringView const name;
 
         /// Reference to the instance of the parser that invokes the callback.
         Parser const& parser;
 
-        Context(Solace::ArrayView<const char*> args, Solace::uint32 inOffset,
-                Solace::StringView inName,
-                Parser const& self)
-            : argv(std::move(args))
-              , offset(inOffset)
-              , name(inName)
-              , parser(self)
-        {}
+		constexpr Context(ArgVector args,
+						  size_type inOffset,
+						  Solace::StringView inName,
+						  Parser const& self) noexcept
+			: argv{Solace::mv(args)}
+			, offset{inOffset}
+			, name{inName}
+			, parser{self}
+		{}
 
-        Context withOffsetAndName(const Solace::ArrayView<const char*>::size_type newOffset,
-                                  Solace::StringView newName) const noexcept {
-            return {argv,
-                newOffset,
-                newName,
-                parser
-            };
-        }
+		constexpr Context withOffsetAndName(size_type newOffset, Solace::StringView newName) const noexcept {
+			return {argv,
+					newOffset,
+					newName,
+					parser };
+		}
 
     };
 
@@ -231,7 +226,8 @@ public:
         Argument(Solace::StringLiteral name, Solace::StringLiteral description, bool* value);
 
         template<typename F>
-        Argument(Solace::StringLiteral name, Solace::StringLiteral description,
+		Argument(Solace::StringLiteral name,
+				 Solace::StringLiteral description,
 				 F&& callback)
 			: _name{Solace::mv(name)}
 			, _description{Solace::mv(description)}
@@ -274,7 +270,7 @@ public:
 		using Action = std::function<Solace::Result<void, Error>()>;
 
         template<typename F>
-		Command(Solace::StringView description, F&& f)
+		Command(Solace::StringView description, F&& f) noexcept(std::is_nothrow_move_constructible_v<F>)
 			: _description{Solace::mv(description)}
 			, _callback{Solace::fwd<F>(f)}
 			, _options{}
@@ -396,7 +392,7 @@ public:
      *
      * @param appDescription Human readable application description to be used by 'help'-type commands.
      */
-    Parser(Solace::StringView appDescription);
+	Parser(Solace::StringView appDescription) noexcept;
 
     /**
      * Construct a commandline parser with application description and a list of expected options.
@@ -427,7 +423,7 @@ public:
 	Solace::Result<ParseResult, Error>
     parse(int argc, const char* argv[]) const {
         if (argc < 0) {
-			return fail(ParserError::InvalidNumberOfArgs, "Number of arguments can not be negative");
+			return makeParserError(ParserError::InvalidNumberOfArgs, "Number of arguments can not be negative");
         }
 
         return parse(Solace::arrayView(argv, static_cast<size_t>(argc)));

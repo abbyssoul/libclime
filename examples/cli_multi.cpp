@@ -74,7 +74,7 @@ int main(int argc, const char **argv) {
 				{{"u", "name"},			"Greet user name", &userName}
             })
             .commands({
-                          {"greet", {"Say Hi to the user", sayHi}},
+						  {"greet-1", {"Say Hi to the user", sayHi}},
                           {"count", {"Print n numbers", list}},
 						  {"add",	{"Add numbers", {
                                        {"arg1", "1st argument", &addArg_1},

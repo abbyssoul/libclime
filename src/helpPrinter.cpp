@@ -64,8 +64,17 @@ void formatOption(std::ostream& output, char prefixChar, Parser::Option const& o
 
 void formatCommand(std::ostream& output, StringView name, Parser::Command const& cmd) {
 	output << "  "
-		   << std::left << std::setw(16) << name << ' '
-		   << cmd.description()
+			  << name;
+
+	// Do what setw() was meant to do, but does not:
+	// << std::left << std::setw(16) << name << ' ';
+
+	if (name.size() < 16) {
+		char fillBuffer[16] = "               ";
+		output.write(fillBuffer, 16 - name.size());
+	}
+
+	output << cmd.description()
 		   << '\n';
 }
 

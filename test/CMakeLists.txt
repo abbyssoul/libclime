@@ -5,6 +5,7 @@ set(TEST_SOURCE_FILES
         main_gtest.cpp
 
         test_parser.cpp
+        extras/test_multivalueParser.cpp
     )
 
 
